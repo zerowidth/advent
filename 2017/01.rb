@@ -14,7 +14,7 @@ def go(meth, input, expected = nil)
 end
 
 def sum_with_matching_offset(list, offset)
-  list.zip(list.rotate(offset)).select { |a, b| a == b }.map(&:first).inject(0, &:+)
+  list.zip(list.rotate(offset)).select { |a, b| a == b }.map(&:first).sum
 end
 
 # part one
