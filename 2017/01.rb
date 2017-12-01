@@ -1,6 +1,7 @@
 def go(meth, input, expected = nil)
+  print "#{input} => "
   value = meth.call(input)
-  print "#{input} => #{value}"
+  print "#{value}"
   if expected
     if value == expected
       puts " (OK)"
@@ -12,12 +13,15 @@ def go(meth, input, expected = nil)
   end
 end
 
+def sum_with_matching_offset(list, offset)
+  list.zip(list.rotate(offset)).select { |a, b| a == b }.map(&:first).inject(0, &:+)
+end
+
 # part one
 
 def one(str)
   x = str.each_char.map(&:to_i)
-  x.push x.first
-  x.each_cons(2).inject(0) { |s,p| p[0] == p[1] ? s + p[0] : s }
+  sum_with_matching_offset x, 1
 end
 
 puts "-- part one --"
@@ -30,16 +34,8 @@ go method(:one), `pbpaste`
 # part two
 
 def two(str)
-  list = str.each_char.map(&:to_i)
-  len = list.length
-  offset = len / 2 # always an even number of items
-  sum = 0
-  list.each.with_index do |value, index|
-    if value == list[(index + offset) % len]
-      sum += value
-    end
-  end
-  sum
+  x = str.each_char.map(&:to_i)
+  sum_with_matching_offset x, x.length/2
 end
 
 puts "-- part two --"
