@@ -1,46 +1,21 @@
-def go(meth, input, expected = nil)
-  print "#{input} => "
-  value = meth.call(input)
-  print "#{value}"
-  if expected
-    if value == expected
-      puts " (OK)"
-    else
-      puts " (FAIL: expect #{expected})"
-    end
-  else
-    puts
-  end
-end
+require_relative "../toolkit"
 
-def sum_with_matching_offset(list, offset)
+def sum_with_matching_offset(input, &block)
+  list = input.digits
+  offset = yield list
   list.zip(list.rotate(offset)).select { |a, b| a == b }.map(&:first).sum
 end
 
-# part one
+with(:sum_with_matching_offset) { 1 }
+try "1122", 3
+try "1111", 4
+try "1234", 0
+try "91212129", 9
+try puzzle_input
 
-def one(str)
-  x = str.each_char.map(&:to_i)
-  sum_with_matching_offset x, 1
-end
-
-puts "-- part one --"
-go method(:one), "1122", 3
-go method(:one), "1111", 4
-go method(:one), "1234", 0
-go method(:one), "91212129", 9
-go method(:one), `pbpaste`
-
-# part two
-
-def two(str)
-  x = str.each_char.map(&:to_i)
-  sum_with_matching_offset x, x.length/2
-end
-
-puts "-- part two --"
-go method(:two), "1212", 6
-go method(:two), "1221", 0
-go method(:two), "123425", 4
-go method(:two), "123123", 12
-go method(:two), `pbpaste`
+with(:sum_with_matching_offset) { |list| list.length / 2 }
+try "1212", 6
+try "1221", 0
+try "123425", 4
+try "123123", 12
+try puzzle_input
