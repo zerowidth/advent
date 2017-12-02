@@ -1,3 +1,9 @@
+def part(n)
+  puts if n > 1
+  puts "----- part #{n} -----"
+  puts
+end
+
 def with(sym, *args, &block)
   @method = method(sym)
   @args = args
@@ -5,16 +11,15 @@ def with(sym, *args, &block)
 end
 
 def try(input, expected = nil)
-  puts "---"
   if expected
     print "#{input.strip}"
   else
-    puts "puzzle input: "
+    puts "\npuzzle input: "
     if input.lines.size > 1
       print input.lines.first(3).join
       print "..."
     elsif input.length > 80
-      print input[0..80] + "..."
+      print input[0..77] + "..."
     else
       print input
     end
