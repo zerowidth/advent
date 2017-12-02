@@ -4,7 +4,20 @@ def with(sym, &block)
 end
 
 def try(input, expected = nil)
-  print "#{input.strip}"
+  puts "---"
+  if expected
+    print "#{input.strip}"
+  else
+    puts "puzzle input: "
+    if input.lines.size > 1
+      print input.lines.first(3).join
+      print "..."
+    elsif input.length > 80
+      print input[0..80] + "..."
+    else
+      print input
+    end
+  end
   if input.include?("\n") || input.length > 80
     puts
   else
