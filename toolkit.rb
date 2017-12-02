@@ -1,5 +1,6 @@
-def with(sym, &block)
+def with(sym, *args, &block)
   @method = method(sym)
+  @args = args
   @block = block
 end
 
@@ -23,7 +24,7 @@ def try(input, expected = nil)
   else
     print " "
   end
-  value = @method.call(input, &@block)
+  value = @method.call(input, *@args, &@block)
   print "=> #{value}"
   if expected
     if value == expected
