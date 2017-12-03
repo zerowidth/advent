@@ -1,6 +1,6 @@
 require_relative "../toolkit"
 
-def circuit(input, values)
+def parse_wires(input)
   wires = {}
 
   input.lines.each do |line|
@@ -21,10 +21,13 @@ def circuit(input, values)
       raise "what? #{line.inspect}"
     end
   end
+  wires
+end
 
+def circuit(input, values)
+  wires = parse_wires(input)
   filtered = {}
-  memo = {}
-  values.each { |v| filtered[v.to_sym] = resolve(wires, memo, v) }
+  values.each { |v| filtered[v.to_sym] = resolve(wires, {}, v) }
   filtered
 end
 
@@ -90,7 +93,14 @@ expected = {
   y: 456,
 }
 
+part 1
 with :circuit
 try example, expected, %w(d e f g h i x y)
 try reordered, expected, %w(d e f g h i x y)
-try puzzle_input, nil, %w(a)
+first = try puzzle_input, nil, %w(a)
+
+part 2
+wires = parse_wires(puzzle_input)
+puts "setting wire b #{wires["b"].inspect} to #{first[:a]}"
+wires["b"] = [:get, first[:a].to_s]
+puts resolve(wires, {}, "a")
