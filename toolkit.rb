@@ -1,3 +1,5 @@
+require "pp"
+
 def part(n)
   puts if n > 1
   puts "----- part #{n} -----"
@@ -5,13 +7,14 @@ def part(n)
 end
 
 def with(sym, *args, &block)
+  puts "-- with :#{sym} --"
   @method = method(sym)
   @args = args
   @block = block
 end
 
 def try(input, expected = nil, *args)
-  if expected
+  if !expected.nil?
     print "#{input.strip}"
   else
     puts "\npuzzle input: "
@@ -32,7 +35,7 @@ def try(input, expected = nil, *args)
   args = Array(@args) + Array(args)
   value = @method.call(input, *args, &@block)
   print "=> #{value}"
-  if expected
+  if !expected.nil?
     if value == expected
       puts " (OK)"
     else
