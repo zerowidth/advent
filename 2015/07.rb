@@ -5,27 +5,59 @@ def circuit(input, values)
 
   input.lines.each do |line|
     case line
-    when /^(\d+) -> (\w+)/
-      wires[$2] = $1.to_i
+    when /^(\w+) -> (\w+)/
+      wires[$2] = [:get, $1]
     when /^(\w+) AND (\w+) -> (\w+)/
-      wires[$3] = wires[$1] & wires[$2]
+      wires[$3] = [:and, $1, $2]
     when /^(\w+) OR (\w+) -> (\w+)/
-      wires[$3] = wires[$1] | wires[$2]
+      wires[$3] = [:or, $1, $2]
     when /^NOT (\w+) -> (\w+)/
-      wires[$2] = ~wires[$1] & 0xFFFF
+      wires[$2] = [:not, $1]
     when /^(\w+) LSHIFT (\d+) -> (\w+)/
-      wires[$3] = (wires[$1] << $2.to_i) & 0xFFFF
+      wires[$3] = [:lshift, $1, $2]
     when /^(\w+) RSHIFT (\d+) -> (\w+)/
-      wires[$3] = (wires[$1] >> $2.to_i)
+      wires[$3] = [:rshift, $1, $2]
+    else
+      raise "what? #{line.inspect}"
     end
   end
 
   filtered = {}
-  values.each { |v| filtered[v.to_sym] = wires[v] }
+  memo = {}
+  values.each { |v| filtered[v.to_sym] = resolve(wires, memo, v) }
   filtered
 end
 
-with(:circuit, %w(d e f g h i x y))
+def resolve(wires, memo, which)
+  if which =~ /^\d+$/
+    return which.to_i
+  end
+  if memo[which]
+    return memo[which]
+  end
+  wire = wires[which]
+  op = wire.first
+  val = case op
+  when :v
+    wire.last
+  when :and
+    resolve(wires, memo, wire[1]) & resolve(wires, memo, wire[2])
+  when :or
+    resolve(wires, memo, wire[1]) | resolve(wires, memo, wire[2])
+  when :lshift
+    (resolve(wires, memo, wire[1]) << resolve(wires, memo, wire[2])) & 0xFFFF
+  when :rshift
+    resolve(wires, memo, wire[1]) >> resolve(wires, memo, wire[2])
+  when :not
+    ~resolve(wires, memo, wire[1]) & 0xFFFF
+  when :get
+    resolve(wires, memo, wire[1])
+  else
+    raise "what? #{wire.inspect}"
+  end
+  memo[which] = val
+  val
+end
 
 example = <<-S
 123 -> x
@@ -58,6 +90,7 @@ expected = {
   y: 456,
 }
 
-try example, expected
-try reordered, expected
-# try puzzle_input
+with :circuit
+try example, expected, %w(d e f g h i x y)
+try reordered, expected, %w(d e f g h i x y)
+try puzzle_input, nil, %w(a)

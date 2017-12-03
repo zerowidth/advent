@@ -10,7 +10,7 @@ def with(sym, *args, &block)
   @block = block
 end
 
-def try(input, expected = nil)
+def try(input, expected = nil, *args)
   if expected
     print "#{input.strip}"
   else
@@ -29,7 +29,8 @@ def try(input, expected = nil)
   else
     print " "
   end
-  value = @method.call(input, *@args, &@block)
+  args = Array(@args) + Array(args)
+  value = @method.call(input, *args, &@block)
   print "=> #{value}"
   if expected
     if value == expected
@@ -40,6 +41,7 @@ def try(input, expected = nil)
   else
     puts
   end
+  value
 end
 
 def puzzle_input
