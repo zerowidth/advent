@@ -7,9 +7,9 @@ def seating_happiness(input)
 
   scores = people.permutation.map do |ps|
     ps << ps.first
-    print ps.join(" -> ")
+    # print ps.join(" -> ")
     s = ps.each_cons(2).map { |a, b| units[a][b] + units[b][a] }
-    puts " : #{s.inspect} #{s.sum}"
+    # puts " : #{s.inspect} #{s.sum}"
     s.sum
   end
   scores.max
