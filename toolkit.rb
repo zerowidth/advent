@@ -7,7 +7,10 @@ def part(n)
 end
 
 def with(sym, *args, &block)
-  puts "-- with :#{sym} --"
+  print "-- with :#{sym} "
+  print "(#{args.map(&:inspect).join(", ")}) " if args.length > 0
+  print "(with block) " if block
+  puts "--"
   @method = method(sym)
   @args = args
   @block = block
@@ -34,6 +37,9 @@ def try(input, expected = nil, *args)
   end
   args = Array(@args) + Array(args)
   value = @method.call(input, *args, &@block)
+  if block_given?
+    value = yield value
+  end
   print "=> #{value}"
   if !expected.nil?
     if value == expected
