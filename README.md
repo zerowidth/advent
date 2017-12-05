@@ -8,12 +8,23 @@ Solutions for https://adventofcode.com.
 require_relative "../toolkit"
 
 def solution(input)
-  0
+  input.lines.map do |line|
+    # ...
+  end
 end
 
-part 1
-with :solution
+example = <<-EX
+EX
 
+part 1
+with(:solution)
 try "input", 0
+try example, 0
 try puzzle_input
+
+# part 2
+# with(:solution)
+# try "input", 0
+# try example, 0
+# try puzzle_input
 ```
