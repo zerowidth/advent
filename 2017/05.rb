@@ -1,6 +1,6 @@
 require_relative "../toolkit"
 
-def solution(input)
+def jump_escape(input)
   offsets = input.lines.map do |line|
     line.to_i
   end
@@ -28,12 +28,11 @@ example = <<-EX
 EX
 
 part 1
-with(:solution) { |v| v + 1 }
+with(:jump_escape) { |v| v + 1 }
 try example, 5
 try puzzle_input
 
 part 2
-with(:solution) { |v| v >= 3 ? v - 1 : v + 1 }
+with(:jump_escape) { |v| v >= 3 ? v - 1 : v + 1 }
 try example, 10
 try puzzle_input
-
