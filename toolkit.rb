@@ -1,5 +1,11 @@
 require "pp"
 
+TERM_RED = "\e[31m"
+TERM_GREEN = "\e[32m"
+TERM_BLUE = "\e[34m"
+TERM_PURPLE = "\e[35m"
+TERM_RESET = "\e[0m"
+
 def part(n)
   puts if n > 1
   puts "----- part #{n} -----"
@@ -40,15 +46,15 @@ def try(input, expected = nil, *args)
   if block_given?
     value = yield value
   end
-  print "=> #{value}"
-  if !expected.nil?
-    if value == expected
-      puts " (OK)"
-    else
-      puts " (FAIL: expect #{expected})"
-    end
-  else
+  if expected.nil?
+    puts "=> #{TERM_PURPLE}#{value}#{TERM_RESET}"
     puts
+  else
+    if value == expected
+      puts "=> #{TERM_GREEN}#{value}#{TERM_RESET}"
+    else
+      puts "=> #{TERM_RED}#{value}#{TERM_RESET} (expect #{expected})"
+    end
   end
   value
 end
