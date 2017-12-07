@@ -4,76 +4,74 @@ require "set"
 Prog = Struct.new(:name, :weight, :children, :parent)
 
 def parse_tree(input)
-  progs = Hash.new { |h, k| h[k] = [] }
+  nodes = Hash.new { |h, k| h[k] = [] }
   weights = {}
   input.lines.map do |line|
     if line =~ /(\w+) \((\d+)\)(?: -> (.*))?/
       name = $1
-      progs[name] = []
+      nodes[name] = []
       weights[name] = $2.to_i
       if $3
         $3.split(/, /).each do |child|
-          progs[name] << child
+          nodes[name] << child
         end
       end
     else
       puts "what? #{line.inspect}"
     end
   end
-  [progs, weights]
+  yield Tree.new(nodes, weights)
 end
 
-def root(input)
-  progs, _ = *parse_tree(input)
-  supported = Set.new
-  progs.each do |parent, children|
-    children.each { |c| supported << c }
-  end
-  (Set.new(progs.keys) - supported).to_a.first
-end
+class Tree
+  attr_reader :root
 
-def find_wrong_weight(input)
-  progs, weights = *parse_tree(input)
-  final_weights = {}
-  supported = Set.new
-  progs.each do |parent, children|
-    children.each { |c| supported << c }
+  def initialize(nodes, weights)
+    @nodes = nodes
+    @node_weights = weights
+    @weights = {}
+    @root = find_root
+    save_weight_for(@root)
   end
-  root = (Set.new(progs.keys) - supported).to_a.first
 
-  balance root, progs, weights
-  x = $weight
-  $weight = nil
-  x
-end
-
-def balance(root, progs, weights)
-  children = progs[root]
-  # puts "balancing #{root}: #{children.inspect}"
-  child_weights = children.map do |child|
-    balance(child, progs, weights)
-  end
-  if children.size > 0
-    if child_weights.uniq.size > 1
-      puts "#{root} child weights: #{children.zip(child_weights).inspect}"
-      counts = Hash[*child_weights.group_by{ |v| v }.flat_map{ |k, v| [k, v.size] }]
-      expected = counts.detect {|k, v| v != 1}.first
-      puts "#{root} expects all children with weight #{expected}"
-      unbalanced = children.zip(child_weights).detect { |c, w| w != expected }
-      puts "#{root} children unbalanced: child #{unbalanced.first}"
-      unless $weight
-        $weight = weights[unbalanced.first] - (unbalanced.last - expected)
-      end
-    else
-      # puts "#{root} child weights: #{children.zip(child_weights).inspect} (balanced)"
+  def find_root
+    supported = Set.new
+    @nodes.each do |parent, children|
+      children.each { |c| supported << c }
     end
+    (Set.new(@nodes.keys) - supported).to_a.first
   end
-  # puts "#{root} child weights = #{child_weights.inspect}"
-  # if child_weights.uniq.size > 1
-  # puts "#{root} : #{children.zip(child_weights).inspect}"
-  # end
-  # puts "#{root} returning #{weights[root]} + #{child_weights.sum}"
-  weights[root] + child_weights.sum
+
+  def unbalanced_diff
+    node, expected = *find_unbalanced(root)
+    child_weights = @nodes[node].map {|c| @weights[c] }.sum
+    weight = @node_weights[node]
+    puts "#{node} should be #{expected} but is #{weight + child_weights}"
+    weight - (weight + child_weights - expected)
+  end
+
+  def save_weight_for(node)
+    weight = @node_weights[node] + @nodes[node].map { |child| save_weight_for(child) }.sum
+    @weights[node] = weight
+    weight
+  end
+
+  def find_unbalanced(node)
+    puts "checking #{node}"
+    if children = @nodes[node]
+      weights = children.map { |c| @weights[c] }
+      count_by_weight = Hash[*weights.group_by{|v|v}.flat_map {|w,c| [c.length, w]}]
+      if odd_one_out = children.zip(weights).detect {|c,w| w == count_by_weight[1]}
+        odd_one_out = odd_one_out.first
+        puts "#{node} children has odd one out: #{odd_one_out}"
+        expected = count_by_weight.detect {|c, w| c != 1 }.last
+        return find_unbalanced(odd_one_out) || [odd_one_out, expected]
+      else
+        puts "#{node}: children balanced"
+      end
+    end
+    nil
+  end
 end
 
 example = <<-EX
@@ -93,12 +91,11 @@ cntj (57)
 EX
 
 part 1
-with(:root)
+with(:parse_tree) { |t| t.root }
 try example, "tknk"
 try puzzle_input
 
 part 2
-with(:find_wrong_weight)
-# try "input", 0
+with(:parse_tree) { |t| t.unbalanced_diff }
 try example, 60
 try puzzle_input
