@@ -67,7 +67,7 @@ def delay(input)
   # end
   delay = 0
   loop do
-    print "\r#{delay}"
+    print "\r#{delay}" if delay % 1000 == 0
     if seqs.all? { |s| s.clear?(delay) }
       break
     end
