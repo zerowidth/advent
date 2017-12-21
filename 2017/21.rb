@@ -68,9 +68,12 @@ def rejoin(grids)
   gs = Math.sqrt(grids.first.size).to_i
   joined = []
   grids.each_slice(size) do |row|
-    rows = row.map { |r| r.each_slice(gs) }
-    rows.first.zip(*rows[1..-1]).each do |rs|
-      joined.push *rs.flatten
+    0.upto(gs-1) do |y|
+      0.upto(size-1) do |ri|
+        0.upto(gs-1) do |x|
+          joined << row[ri][x + y*gs]
+        end
+      end
     end
   end
   joined
@@ -167,6 +170,7 @@ def solution(input, iterations)
     grid = rejoin(replaced)
     # puts "becomes"
     # show grid
+    print "            \r"
   end
 
   # grid = ('a'..'p').to_a
