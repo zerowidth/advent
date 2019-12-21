@@ -5,11 +5,10 @@ def jump_escape(input)
     line.to_i
   end
   p = 0
-  out = offsets.length
   steps = 0
 
   loop do
-    break if p < 0 || p >= out
+    break if p < 0 || p >= offsets.length
     o = offsets[p]
     offsets[p] = yield o
     p += o

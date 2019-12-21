@@ -216,3 +216,7 @@ part 2
 with(:solution, 18)
 # try example, 0
 try puzzle_input
+
+part 3
+with(:solution, 40)
+try puzzle_input

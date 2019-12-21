@@ -13,6 +13,7 @@ def solution(input)
   regs = Hash.new(0)
   pc = 0
   last = 0
+  mul_count = 0
 
   while pc >= 0 && pc < prog.length
     # puts "#{pc} : #{prog[pc].inspect}"
@@ -28,6 +29,7 @@ def solution(input)
       regs[reg] += arg
       pc += 1
     when "mul"
+      mul_count += 1
       regs[reg] *= arg
       pc += 1
     when "mod"

@@ -4,23 +4,45 @@ require "set"
 Prog = Struct.new(:name, :weight, :children, :parent)
 
 def parse_tree(input)
-  nodes = Hash.new { |h, k| h[k] = [] }
+  nodes_by_name = {}
+  parents = {}
+  children_by_name = Hash.new { |h, k| h[k] = [] }
   weights = {}
   input.lines.map do |line|
     if line =~ /(\w+) \((\d+)\)(?: -> (.*))?/
       name = $1
-      nodes[name] = []
-      weights[name] = $2.to_i
+      weight = $2.to_i
+      nodes_by_name[name] = Node.new name, weight
       if $3
         $3.split(/, /).each do |child|
-          nodes[name] << child
+          parents[child] = name
+          children_by_name[name] << child
         end
       end
     else
       puts "what? #{line.inspect}"
     end
   end
-  yield Tree.new(nodes, weights)
+
+  puts "parents:"
+  pp parents
+  puts "children:"
+  pp children_by_name
+
+  bottom = children_by_name.keys.detect { |k| parents[k] == nil }
+  puts "bottom #{bottom}"
+
+
+
+  # yield Tree.new(nodes, weights)
+
+  nil
+end
+
+Node = Struct.new(:name, :weight, :children) do
+  def weight_with_children
+    children.map(&:weight_with_children).sum
+  end
 end
 
 class Tree
@@ -93,9 +115,9 @@ EX
 part 1
 with(:parse_tree) { |t| t.root }
 try example, "tknk"
-try puzzle_input
+# try puzzle_input
 
-part 2
-with(:parse_tree) { |t| t.unbalanced_diff }
-try example, 60
-try puzzle_input
+# part 2
+# with(:parse_tree) { |t| t.unbalanced_diff }
+# try example, 60
+# try puzzle_input
