@@ -27,10 +27,6 @@ def parse(input)
   units
 end
 
-
-
-
-
 example = <<-EX
 Alice would gain 54 happiness units by sitting next to Bob.
 Alice would lose 79 happiness units by sitting next to Carol.
