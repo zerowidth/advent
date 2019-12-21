@@ -1,4 +1,5 @@
 require "pp"
+require "set"
 
 TERM_RED = "\e[31m"
 TERM_GREEN = "\e[32m"
@@ -8,59 +9,81 @@ TERM_RESET = "\e[0m"
 
 def part(n)
   puts if n > 1
-  puts "----- part #{n} -----"
+  puts "-" * 30 + " part #{n} " + "-" * 30
   puts
 end
 
-def with(sym, *args, &block)
-  print "-- with :#{sym} "
+def with(sym, *args, **kwargs, &block)
+  print "-" * 20 + " with :#{sym} "
   print "(#{args.map(&:inspect).join(", ")}) " if args.length > 0
   print "(with block) " if block
-  puts "--"
+  puts "-" * 20
   @method = method(sym)
   @args = args
+  @kwargs = kwargs
   @block = block
 end
 
-def try(input, expected = nil, *args)
-  if !expected.nil?
-    print "#{input.strip}"
-  else
-    puts "\npuzzle input: "
-    if input.lines.size > 1
-      print input.lines.first(3).join
-      print "..."
-    elsif input.length > 80
-      print input[0..77] + "..."
-    else
-      print input
+def try(input, *args, expect: :puzzle_input, **kwargs)
+  # maintain parity with "older" API, before kwargs, to differentiate a normal
+  # try(example, expected, arg, arg) from try(input, arg, arg, expected: ...)
+  if expect == :puzzle_input && args.length > 0
+    expect = args.shift
+    if expect.nil? # explicit 'nil' to skip over arguments, again "old" api
+      expect = :puzzle_input
     end
   end
-  if input.include?("\n") || input.length > 80
-    puts
-  else
-    print " "
+
+  start = Time.now
+
+  input_str = input.kind_of?(String) ? input.rstrip : input.inspect
+  if expect.nil?
+    print "\npuzzle input: "
   end
+  if input_str.lines.size > 1
+    print input_str.lines.first(3).join
+    print "..."
+  elsif input_str.length > 80
+    print input_str[0..77] + "..."
+  else
+    print input_str
+  end
+  puts "\n---"
+
+  # gather arguments including args from a `with` call:
   args = Array(@args) + Array(args)
-  value = @method.call(input, *args, &@block)
-  if block_given?
-    value = yield value
+  kwargs = @kwargs.merge(kwargs)
+  # work around a ruby bug, ref:
+  # https://bugs.ruby-lang.org/issues/11860
+  # https://bugs.ruby-lang.org/issues/14183
+  if kwargs.empty?
+    value = @method.call(input, *args, &@block)
+  else
+    value = @method.call(input, *args, **kwargs, &@block)
   end
-  if expected.nil?
-    puts "=> #{TERM_PURPLE}#{value}#{TERM_RESET}"
+
+  value = yield value if block_given?
+
+  if expect == :puzzle_input # explicitly not set!
+    puts "=> #{TERM_PURPLE}#{value.inspect}#{TERM_RESET}"
     puts
   else
-    if value == expected
-      puts "=> #{TERM_GREEN}#{value}#{TERM_RESET}"
+    if value == expect
+      puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
     else
-      puts "=> #{TERM_RED}#{value}#{TERM_RESET} (expect #{expected})"
+      puts "=> #{TERM_RED}#{value.inspect}#{TERM_RESET} (expect #{expect.inspect})"
     end
   end
+
+  elapsed = Time.now - start
+  puts "* completed in #{"%0.5f" % elapsed.to_f} seconds"
+
   value
 end
 
 def puzzle_input
-  File.read(caller.last.split(":").first.sub(".rb", ".txt"))
+  file = caller.grep(%r(\d{4}/\d{2}\.rb)).first
+  File.read(file.split(":").first.sub(".rb", ".txt"))
 end
 
 class String
@@ -74,5 +97,177 @@ class String
 
   def number_table
     lines.map(&:numbers).reject(&:empty?)
+  end
+end
+
+# infinite grid
+class Grid
+
+  # cost function
+  def self.taxicab(from, to)
+    from.map(&:abs).zip(to.map(&:abs)).map(&:sum).sum
+  end
+
+  def initialize(&value_block)
+    @points = {}
+    @value_block = value_block
+  end
+
+  def set(x,y, value)
+    @points[ [x, y] ] = value
+  end
+
+  def at(x, y)
+    k = [x, y]
+    if @points.key? k
+      @points[k]
+    elsif @value_block
+      @points[k] = @value_block.call(x, y)
+    end
+  end
+
+  def at?(x, y)
+    k = [x, y]
+    @points.key? k
+  end
+
+  def locate(value=nil, &filter)
+    points = filter ? select(&filter) : select { |x, y, v| v == value }
+    points.map { |x, y, v| [x, y] }
+  end
+
+  def width
+    xs = @points.keys.map(&:first)
+    xs.max - xs.min
+  end
+
+  def height
+    ys = @points.keys.map(&:last)
+    ys.max - ys.min
+  end
+
+  def adjacent_points(cx, cy, diagonal: true)
+    vs = []
+    (cx-1).upto(cx+1) do |x|
+      (cy-1).upto(cy+1) do |y|
+        next if x == cx && y == cy
+        next if !diagonal && x != cx && y != cy
+        vs << [x,y]
+      end
+    end
+    vs
+  end
+
+  def adjacent_values(cx, cy, diagonal: true)
+    vs = []
+    (cx-1).upto(cx+1) do |x|
+      (cy-1).upto(cy+1) do |y|
+        next if x == cx && y == cy
+        next if !diagonal && x != cx && y != cy
+        vs << at(x, y)
+      end
+    end
+    vs
+  end
+
+  # dijkstra's, thanks https://www.redblobgames.com/pathfinding/a-star/introduction.html
+  def path(start, goal: nil, filter:, diagonal: true, cost: self.class.method(:taxicab), &matcher)
+    unless goal || block_given?
+      raise ArgumentError, "missing target or target matcher block"
+    end
+
+    frontier = [] # list of [location, cost]
+    frontier << [start, 0]
+    came_from = {}
+    cost_so_far = {}
+    cost_so_far[start] = 0
+    found = nil
+
+    until frontier.empty?
+      frontier = frontier.sort_by(&:last)
+      current = frontier.shift[0]
+      STDERR.puts "  current: #{(current).inspect}" if $debug
+      if (matcher && matcher.call(current)) || (goal && current == goal)
+        found = current
+        STDERR.puts "  found! #{(current).inspect}" if $debug
+        break
+      end
+      neighbors = adjacent_points(*current, diagonal: diagonal).select(&filter)
+      STDERR.puts "  neighbors: #{(neighbors).inspect}" if $debug
+      neighbors.each do |neighbor|
+        new_cost = cost_so_far[current] + cost.call(current, neighbor)
+        if !cost_so_far.key?(neighbor) || new_cost < cost_so_far[neighbor]
+          cost_so_far[neighbor] = new_cost
+          frontier << [neighbor, new_cost]
+          came_from[neighbor] = current
+        end
+      end
+    end
+
+    # if we stopped after finding the goal:
+    if found
+      STDERR.puts "came_from: #{(came_from).pretty_inspect}" if $debug
+      STDERR.puts "current: #{(current).inspect}" if $debug
+      current = found
+      path = []
+      while current != start
+        path << current
+        current = came_from.fetch(current)
+      end
+      # path << start # leave current location off!
+      path.reverse
+    else
+      nil
+    end
+  end
+
+  include Enumerable
+  def each(fill: false)
+    keys = @points.keys
+    xmin = keys.map(&:first).min
+    xmax = keys.map(&:first).max
+    ymin = keys.map(&:last).min
+    ymax = keys.map(&:last).max
+    ymin.upto(ymax) do |y|
+      xmin.upto(xmax) do |x|
+        v = fill ? at([x,y]) : @points[[x, y]]
+        yield [x, y, v]
+      end
+    end
+  end
+
+  def points_set
+    Set.new @points.keys
+  end
+
+  def to_s(pad: 1)
+    s = ""
+    keys = @points.keys
+    xmin = keys.map(&:first).min
+    xmax = keys.map(&:first).max
+    ymin = keys.map(&:last).min
+    ymax = keys.map(&:last).max
+
+    size = @points.values.map(&:to_s).map(&:length).max + pad
+
+    ymin.upto(ymax) do |y|
+      xmin.upto(xmax) do |x|
+        key = [x, y]
+        v = @points[key]
+        if v != nil
+          s << v.to_s.rjust(size)
+        else
+          s << " " * size
+        end
+      end
+      s << "\n"
+    end
+    s
+  end
+end
+
+module Enumerable
+  def map_with(method)
+    map { |item| send(method, item) }
   end
 end
