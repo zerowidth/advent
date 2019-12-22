@@ -1,4 +1,5 @@
 require_relative "../toolkit"
+require_relative "./simple_grid"
 require_relative "./intcode"
 
 def tiles(program)
@@ -25,7 +26,7 @@ class Game
     memory = program.split(",").map(&:to_i)
     memory[0] = 2 # two quarters to play!
     @cpu = Intcode.new memory
-    @display = Grid.new
+    @display = SimpleGrid.new
     @score = 0
     @ball = @paddle = 0
   end
@@ -60,7 +61,7 @@ end
 
 
 def draw(points)
-  grid = Grid.new
+  grid = SimpleGrid.new
   score = nil
   puts grid.inspect
   puts grid.to_s

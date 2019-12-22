@@ -1,7 +1,8 @@
 require_relative "../toolkit"
+require_relative "./simple_grid"
 
 def read(map)
-  grid = Grid.new
+  grid = SimpleGrid.new
   map.split("\n").each.with_index do |line, y|
     line.each_char.with_index do |char, x|
       grid.set x, y, char

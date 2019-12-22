@@ -1,8 +1,9 @@
 require_relative "../toolkit"
+require_relative "./simple_grid"
 
 def closest_intersection(input)
   wires = input.split.map(&:strip).map { |line| line.strip.split(",") }
-  grid = Grid.new
+  grid = SimpleGrid.new
 
   intersections = Set.new
   wires.each.with_index do |instructions, wire|
@@ -49,7 +50,7 @@ def nearest_by_wire(input)
 end
 
 def map_wire(instructions)
-  grid = Grid.new
+  grid = SimpleGrid.new
   x = y = 0
   step = 0
   instructions.each do |instruction|

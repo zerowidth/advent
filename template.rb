@@ -1,11 +1,5 @@
 require_relative "../toolkit"
 
-def part1(input)
-  input.split("\n").each do |line|
-
-  end
-end
-
 ex1 = <<-EX
 EX
 
@@ -14,6 +8,12 @@ EX
 
 ex3 = <<-EX
 EX
+
+def part1(input)
+  input.split("\n").each do |line|
+
+  end
+end
 
 part 1
 with :part1

@@ -1,11 +1,12 @@
 require_relative "../toolkit"
 require_relative "./intcode"
+require_relative "./simple_grid"
 
 def part1(input)
   cpu = Intcode.from_program(input)
   cpu.run
 
-  grid = Grid.new
+  grid = SimpleGrid.new
   view = cpu.output.map(&:chr).join("").split("\n")
   view.each.with_index do |line, y|
     line.each_char.with_index do |char, x|

@@ -1,5 +1,6 @@
 require_relative "../toolkit"
 require_relative "./intcode"
+require_relative "./simple_grid"
 
 ex1 = <<-EX
 #.......................................
@@ -51,7 +52,7 @@ def part1(input)
     end
   end
 
-  @grid = Grid.new
+  @grid = SimpleGrid.new
   out.each_slice(50).with_index do |row, y|
     row.each.with_index do |v, x|
       @grid.set x, y, v == 0 ? "." : "#"
@@ -64,7 +65,7 @@ end
 
 def part2_intcode(input, square_size:, debug: false)
   program = input.split(",").map(&:to_i)
-  grid = Grid.new do |x, y|
+  grid = SimpleGrid.new do |x, y|
     cpu = Intcode.new program, [x, y]
     cpu.run
     cpu.output.first == 0 ? "." : "#"
@@ -73,7 +74,7 @@ def part2_intcode(input, square_size:, debug: false)
 end
 
 def part2_parsed(input, square_size:, debug: false)
-  grid = Grid.new
+  grid = SimpleGrid.new
 
   input.strip.split("\n").each.with_index do |row, y|
     row.each_char.with_index do |v, x|

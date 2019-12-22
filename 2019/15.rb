@@ -1,5 +1,6 @@
 require_relative "../toolkit"
 require_relative "./intcode"
+require_relative "./simple_grid"
 
 DIRS = {
   [ 0,  1] => 1, # north ("south" on screen)
@@ -26,7 +27,7 @@ end
 # explores the grid defined by the input program
 def explore(input)
   cpu = Intcode.from_program(input)
-  grid = Grid.new
+  grid = SimpleGrid.new
   dir = 1
   pos = [0, 0]
   grid.set(*pos, "•")
