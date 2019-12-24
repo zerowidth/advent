@@ -115,7 +115,10 @@ def parse(input)
       grid[Vec[x, y]] = v if v != " "
     end
   end
+  grid
+end
 
+def find_portals(grid)
   portals = {}
   char = /[A-Z]/
   grid.each do |p, v|
@@ -142,11 +145,12 @@ def parse(input)
     portal_pairs[name] << pos
   end
 
-  [grid, portals, portal_pairs]
+  [portals, portal_pairs]
 end
 
 def part1(input)
-  grid, portals, portal_pairs = parse(input)
+  grid = parse(input)
+  portals, portal_pairs = find_portals(grid)
   # STDERR.puts "portals: #{(portals).inspect}"
   # STDERR.puts "portal_pairs: #{(portal_pairs).inspect}"
 
@@ -177,17 +181,54 @@ def part1(input)
   end
 end
 
-def part2(input)
-  grid, portals, portal_pairs = parse(input)
-
-  STDERR.puts "grid.width: #{(grid.width).inspect}"
-  STDERR.puts "grid.height: #{(grid.height).inspect}"
+def part2(input, depth_limit:)
+  grid = parse(input)
+  portals, portal_pairs = find_portals(grid)
 
   # psuedo-3-dimensional
   start = [portal_pairs["AA"].first, 0]
   goal = [portal_pairs["ZZ"].first, 0]
 
+  STDERR.puts "grid.width: #{(grid.width).inspect}"
+  STDERR.puts "grid.height: #{(grid.height).inspect}"
+  # STDERR.puts "portals: #{(portals).inspect}"
+  # STDERR.puts "portal_pairs:\n#{(portal_pairs).pretty_inspect}"
+
+  # portals.each do |xy, p|
+    # grid.set(xy, p.downcase)
+  # end
+  # puts grid.to_s
+  # return
+
   search = GraphSearch.new do |s|
+    # s.debug = true
+    # s.each_step = ->(start, current, came_from, cost_so_far) do
+      # xy, z = *current
+      # # break unless portal = portals[xy]
+      # path = []
+      # cur = current
+      # while cur != start
+        # path << cur
+        # cur = came_from.fetch(cur)
+      # end
+      # path << start
+      # ps = path.reverse.each_cons(2).map do |a, b|
+        # if portals[a[0]] && portals[b[0]]
+          # [portals[a[0]], a[1], b[1]]
+        # else
+          # nil
+        # end
+      # end.compact.map do |p, a, b|
+        # "#{p}(#{b})"
+      # end.join("->")
+      # if p = portals[xy]
+        # ps << "=>#{p}"
+      # else
+        # ps << "=>#{xy}"
+      # end
+
+      # STDERR.puts "=> (#{xy} #{z}): #{ps}" #if ps.match?(/NM\(7\)=>/) || ps.include?("=>LP")
+    # end
     s.neighbors = ->(pos) do
       xy, z = *pos
 
@@ -200,35 +241,29 @@ def part2(input)
         if other = (xy == pair[0] ? pair[1] : pair[0])
           # are we _on_ an outer ring, traveling "down" a layer?
           outer_ring = xy.x == 2 || xy.y == 2 ||
-            xy.x == (grid.width - 2 - 1) ||
-            xy.y == (grid.height - 2 - 1)
+            xy.x == (grid.width - 2) ||
+            xy.y == (grid.height - 2)
+          # STDERR.puts "=> at portal #{portal} #{xy} z #{z}: outer ring #{outer_ring}"
           if (outer_ring && z > 0) || !outer_ring
-            # STDERR.puts "including portal #{portal}"
             delta_z = outer_ring ? -1 : 1
-            ns << [other, z + delta_z]
+            # STDERR.puts "  => portal #{portal} to #{other}(#{z + delta_z})"
+            if z < depth_limit # arbitrary depth limit
+              ns << [other, z + delta_z]
+            end
           end
-        elsif portal == "ZZ" && z == 0
-          # STDERR.puts "including portal ZZ"
-          ns << [portal_pairs["ZZ"][0], 0]
         end
       end
 
       ns
     end
-    s.break_if = ->(cost_so_far, best) do
-      if best && (best > 0) && (cost_so_far > (best * 2))
-        STDERR.puts "BREAK: #{best} / #{cost_so_far}"
-        true
-      else
-        # gotta stop somewhere
-        if cost_so_far > (grid.width * grid.height / 2)
-          STDERR.puts "giving up at cost #{cost_so_far}"
-          true
-        end
-      end
-    end
     s.cost = ->(a, b) { 1 }
-    # s.debug = true
+    # s.break_if = ->(cost_so_far, best) do
+      # # gotta stop somewhere
+      # if cost_so_far > (grid.width * grid.height / 2)
+        # STDERR.puts "giving up at cost #{cost_so_far}"
+        # true
+      # end
+    # end
   end
 
   # puts grid.to_s
@@ -242,11 +277,12 @@ part 1
 with :part1
 try ex1, expect: 23
 try ex2, expect: 58
-try puzzle_input
+try puzzle_input, expect: 674
 
 part 2
-with :part2
+with :part2, depth_limit: 20
 try ex1, 26
-# try ex2, nil
-# try ex3, 396
-# try puzzle_input
+try ex2, nil
+try ex3, 396
+with :part2, depth_limit: 40
+try puzzle_input
