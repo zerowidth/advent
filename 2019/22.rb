@@ -95,47 +95,11 @@ def invert(steps:, index:, deck_size:)
         # end
       # end
       # or: use inverse modulo:
-      index = (index * inverse_mod(arg, deck_size)) % deck_size
+      index = (index * arg.inverse_mod(deck_size)) % deck_size
       # STDERR.puts "inc #{arg}: #{prev} -> #{index}"
     end
   end
   index
-end
-
-# Thanks to https://gist.github.com/jingoro/2388745
-# Returns an array of the form `[gcd(x, y), a, b]`, where
-# `ax + by = gcd(x, y)`.
-#
-# @param [Integer] x
-# @param [Integer] y
-# @return [Array<Integer>]
-def gcdext(x, y)
-  if x < 0
-    g, a, b = gcdext(-x, y)
-    return [g, -a, b]
-  end
-  if y < 0
-    g, a, b = gcdext(x, -y)
-    return [g, a, -b]
-  end
-  r0, r1 = x, y
-  a0 = b1 = 1
-  a1 = b0 = 0
-  until r1.zero?
-    q = r0 / r1
-    r0, r1 = r1, r0 - q*r1
-    a0, a1 = a1, a0 - q*a1
-    b0, b1 = b1, b0 - q*b1
-  end
-  [r0, a0, b0]
-end
-
-def inverse_mod(num, mod)
-  g, a, _ = gcdext(num, mod)
-  unless g == 1
-    raise ZeroDivisionError.new("#{num} has no inverse modulo #{mod}")
-  end
-  a % mod
 end
 
 def part2(input, deck_size:, iterations:, range:)
@@ -243,7 +207,7 @@ def part2_analytical(input, deck_size:, iterations:, range:)
     STDERR.puts "#{a} #{b}"
   end
 
-  inverse = inverse_mod(a, deck_size)
+  inverse = a.inverse_mod(deck_size)
   STDERR.puts "invert -> a: #{inverse} b: #{b}"
 
   range.map do |i|

@@ -84,6 +84,43 @@ def puzzle_input
   File.read(file.split(":").first.sub(".rb", ".txt"))
 end
 
+class Integer
+  # Thanks to https://gist.github.com/jingoro/2388745
+  # Returns an array of the form `[gcd(x, y), a, b]`, where
+  # `ax + by = gcd(x, y)`.
+  #
+  # @param [Integer] y
+  # @return [Array<Integer>]
+  def gcdext(y)
+    if self < 0
+      g, a, b = (-self).gcdext(y)
+      return [g, -a, b]
+    end
+    if y < 0
+      g, a, b = self.gcdext(-y)
+      return [g, a, -b]
+    end
+    r0, r1 = self, y
+    a0 = b1 = 1
+    a1 = b0 = 0
+    until r1.zero?
+      q = r0 / r1
+      r0, r1 = r1, r0 - q*r1
+      a0, a1 = a1, a0 - q*a1
+      b0, b1 = b1, b0 - q*b1
+    end
+    [r0, a0, b0]
+  end
+
+  def inverse_mod(mod)
+    g, a, _ = gcdext(mod)
+    unless g == 1
+      raise ZeroDivisionError.new("#{self} has no inverse modulo #{mod}")
+    end
+    a % mod
+  end
+end
+
 class String
   def digits
     each_char.map(&:to_i)
