@@ -3,21 +3,25 @@ require "set"
 
 TERM_RED = "\e[31m"
 TERM_GREEN = "\e[32m"
+TERM_YELLOW = "\e[33m"
 TERM_BLUE = "\e[34m"
 TERM_PURPLE = "\e[35m"
+TERM_CYAN = "\e[36m"
 TERM_RESET = "\e[0m"
 
 def part(n)
   puts if n > 1
-  puts "-" * 30 + " part #{n} " + "-" * 30
-  puts
+  puts TERM_BLUE + "*" * 30 + " part #{n} " + "*" * 30 + TERM_RESET
 end
 
 def with(sym, *args, **kwargs, &block)
-  print "-" * 20 + " with :#{sym} "
-  print "(#{args.map(&:inspect).join(", ")}) " if args.length > 0
-  print "(with block) " if block
-  puts "-" * 20
+  puts
+  s = "with :#{sym} "
+  s << "#{args.map(&:inspect).join(", ")} " if args.length > 0
+  s << "#{kwargs.inspect[1..-2]} " if kwargs.length > 0
+  s << "(with block) " if block
+  puts "#{TERM_CYAN}#{s}#{TERM_RESET}"
+  puts "-" * s.length
   @method = method(sym)
   @args = args
   @kwargs = kwargs
@@ -25,6 +29,13 @@ def with(sym, *args, **kwargs, &block)
 end
 
 def try(input, *args, expect: :puzzle_input, **kwargs)
+  file, line = *caller.first.split(":")
+  # get the first argument:
+  arg = File.readlines(file)[line.to_i - 1].scan(/try (\w+),?/).first.first
+  puts
+  puts "try #{TERM_YELLOW}#{arg}#{TERM_RESET}"
+  puts "-" * (4 + arg.length)
+
   # maintain parity with "older" API, before kwargs, to differentiate a normal
   # try(example, expected, arg, arg) from try(input, arg, arg, expected: ...)
   if expect == :puzzle_input && args.length > 0
@@ -36,19 +47,6 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
 
   start = Time.now
 
-  input_str = input.kind_of?(String) ? input.rstrip : input.inspect
-  if expect.nil?
-    print "\npuzzle input: "
-  end
-  if input_str.lines.size > 1
-    print input_str.lines.first(3).join
-    print "..."
-  elsif input_str.length > 80
-    print input_str[0..77] + "..."
-  else
-    print input_str
-  end
-  puts "\n---"
 
   # gather arguments including args from a `with` call:
   args = Array(@args) + Array(args)
@@ -64,20 +62,20 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
 
   value = yield value if block_given?
 
-  if expect == :puzzle_input # explicitly not set!
+  elapsed = Time.now - start
+  puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
+
+  if expect == :puzzle_input # explicitly not set, this is newly calculated
     puts "=> #{TERM_PURPLE}#{value.inspect}#{TERM_RESET}"
     puts
   else
     if value == expect
       puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
     else
-      puts "=> #{TERM_RED}#{value.inspect}#{TERM_RESET} (expect #{expect.inspect})"
+      puts "!= #{expect.inspect}"
+      puts "=> #{TERM_RED}#{value.inspect}#{TERM_RESET}"
     end
   end
-
-  elapsed = Time.now - start
-  puts "* completed in #{"%0.5f" % elapsed.to_f} seconds"
-
   value
 end
 
