@@ -3,7 +3,13 @@ require "pathname"
 task default: %w(latest)
 
 def year
-  ENV.fetch("year", Time.now.year.to_s)
+  now = Time.now
+  if now.month == 12
+    default = now.year
+  else
+    default = now.year.to_i - 1
+  end
+  ENV.fetch("year", default.to_s)
 end
 
 def root
