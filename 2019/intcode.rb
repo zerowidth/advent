@@ -21,6 +21,12 @@ class Intcode
     @inputs << value
   end
 
+  def read_output
+    out = @output.dup
+    @output.clear
+    out
+  end
+
   attr_reader :inputs
   attr_reader :output
   attr_reader :memory
