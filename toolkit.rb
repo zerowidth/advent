@@ -1,5 +1,11 @@
+require "bundler"
+Bundler.setup
+
 require "pp"
 require "set"
+
+require "diffy"
+Diffy::Diff.default_format = :color
 
 TERM_RED = "\e[31m"
 TERM_GREEN = "\e[32m"
@@ -67,13 +73,11 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
   if expect == :puzzle_input # explicitly not set, this is newly calculated
     puts "=> #{TERM_PURPLE}#{value.inspect}#{TERM_RESET}"
     puts
+  elsif value == expect
+    puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
   else
-    if value == expect
-      puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
-    else
-      puts "!= #{expect.inspect}"
-      puts "=> #{TERM_RED}#{value.inspect}#{TERM_RESET}"
-    end
+    puts "=> #{TERM_RED}mismatch:#{TERM_RESET}\n"
+    puts Diffy::Diff.new(expect.to_s + "\n", value.to_s + "\n")
   end
   value
 end
