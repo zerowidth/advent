@@ -15,6 +15,11 @@ TERM_PURPLE = "\e[35m"
 TERM_CYAN = "\e[36m"
 TERM_RESET = "\e[0m"
 
+# clear iterm scrollback, makes for easy scroll-to-top when debugging
+def clear_term
+  print "\033[2J\033[3J\033[1;1H"
+end
+
 def part(n)
   puts if n > 1
   puts TERM_BLUE + "*" * 30 + " part #{n} " + "*" * 30 + TERM_RESET
