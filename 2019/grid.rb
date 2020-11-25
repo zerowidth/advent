@@ -85,8 +85,8 @@ class Grid
     return [] if @points.empty?
 
     vs = []
-    (pos.x-1).upto(pos.x+1) do |x|
-      (pos.y-1).upto(pos.y+1) do |y|
+    (pos.y - 1).upto(pos.y + 1) do |y|
+      (pos.x - 1).upto(pos.x + 1) do |x|
         next if x == pos.x && y == pos.y
         next if !diagonal && x != pos.x && y != pos.y
 
@@ -100,8 +100,8 @@ class Grid
     return [] if @points.empty?
 
     vs = []
-    (pos.x-1).upto(pos.x+1) do |x|
-      (pos.y-1).upto(pos.y+1) do |y|
+    (pos.y - 1).upto(pos.y + 1) do |y|
+      (pos.x - 1).upto(pos.x + 1) do |x|
         next if x == pos.x && y == pos.y
         next if !diagonal && x != pos.x && y != pos.y
 
@@ -109,6 +109,14 @@ class Grid
       end
     end
     vs
+  end
+
+  def row(y)
+    select { |p, _| p.y == y }
+  end
+
+  def column(x)
+    select { |p, _| p.x == x }
   end
 
   include Enumerable
@@ -136,7 +144,9 @@ class Grid
     Set.new @points.keys
   end
 
-  def to_s(pad: 0)
+  def to_s(pad: 0, prefix: 0)
+    return "" if @points.empty?
+
     size = @points.values.map(&:to_s).map(&:length).max + pad
 
     keys = @points.keys
@@ -144,6 +154,7 @@ class Grid
     ys = keys.map(&:y)
     s = ""
     ys.min.upto(ys.max) do |y|
+      s << " " * prefix
       xs.min.upto(xs.max) do |x|
         p = Vec[x, y]
         v = @points[p]
