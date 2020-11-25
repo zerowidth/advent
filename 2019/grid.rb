@@ -21,10 +21,10 @@ class Vec
 
   include Comparable
   def <=>(other)
-    (x <=> other.x) == 0 ? (y <=> other.y) : (x <=> other.x)
+    (x <=> other.x).zero? ? (y <=> other.y) : (x <=> other.x)
   end
 
-  # for Hash usage:
+  # for use as Hash keys:
   alias eql? ==
   def hash
     x.hash ^ y.hash # XOR
@@ -41,6 +41,7 @@ class Vec
 end
 
 class Grid
+  attr_reader :points
 
   def initialize(&value_block)
     @points = {}
@@ -65,9 +66,9 @@ class Grid
     @points.key? p
   end
 
-  def locate(value=nil, &filter)
-    points = filter ? select(&filter) : select { |p, v| v == value }
-    points.map { |p, v| p }
+  def locate(value = nil, &filter)
+    points = filter ? select(&filter) : select { |_, v| v == value }
+    points.map { |p, _| p }
   end
 
   def width
@@ -81,23 +82,29 @@ class Grid
   end
 
   def adjacent_points(pos, diagonal: true)
+    return [] if @points.empty?
+
     vs = []
     (pos.x-1).upto(pos.x+1) do |x|
       (pos.y-1).upto(pos.y+1) do |y|
         next if x == pos.x && y == pos.y
         next if !diagonal && x != pos.x && y != pos.y
-        vs << Vec[x,y]
+
+        vs << Vec[x, y]
       end
     end
     vs
   end
 
   def adjacent_values(pos, diagonal: true)
+    return [] if @points.empty?
+
     vs = []
     (pos.x-1).upto(pos.x+1) do |x|
       (pos.y-1).upto(pos.y+1) do |y|
         next if x == pos.x && y == pos.y
-          next if !diagonal && x != pos.x && y != pos.y
+        next if !diagonal && x != pos.x && y != pos.y
+
         vs << get(Vec[x, y])
       end
     end
@@ -106,6 +113,9 @@ class Grid
 
   include Enumerable
   def each
+    return to_enum(:each) unless block_given?
+    return if @points.empty?
+
     keys = @points.keys
     xs = keys.map(&:x)
     ys = keys.map(&:y)
@@ -115,6 +125,11 @@ class Grid
         yield [p, @points[p]]
       end
     end
+  end
+
+  include Comparable
+  def <=>(other)
+    @points <=> other.points
   end
 
   def points_set
@@ -132,7 +147,7 @@ class Grid
       xs.min.upto(xs.max) do |x|
         p = Vec[x, y]
         v = @points[p]
-        if v == nil
+        if v.nil?
           s << " " * size
         else
           s << v.to_s.rjust(size)
@@ -143,5 +158,3 @@ class Grid
     s
   end
 end
-
-

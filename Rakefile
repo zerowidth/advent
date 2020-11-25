@@ -1,13 +1,13 @@
 require "pathname"
 
-task default: %w(latest)
+task default: %w[latest]
 
 def year
   now = Time.now
-  if now.month == 12
-    default = now.year
+  default = if now.month == 12
+    now.year
   else
-    default = now.year.to_i - 1
+    now.year.to_i - 1
   end
   ENV.fetch("year", default.to_s)
 end
@@ -21,14 +21,13 @@ def files_for_year
 end
 
 def day_file
-  if day = ENV["day"]
-    file = (root / year) / ("%02d.rb" % day)
+  file = if (day = ENV["day"])
+    (root / year) / ("%02d.rb" % day)
   else
-    file = files_for_year.sort.last
+    files_for_year.max
   end
   file.to_s
 end
-
 
 desc "Run the latest puzzle (default). Specify `year=YYYY` to set the year."
 task :latest do
@@ -50,10 +49,10 @@ end
 
 desc "Create the next one"
 task :next do
-  files = files_for_year.sort.map {|f| File.basename(f, ".rb") }
+  files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
   src = root / "template.rb"
-  dest = root / year / (files.last.succ + ".rb")
-  input = root / year / (files.last.succ + ".txt")
+  dest = root / year / "#{files.last.succ}.rb"
+  input = root / year / "#{files.last.succ}.txt"
   FileUtils.cp src, dest
   puts "created #{dest}"
   `pbpaste > #{input}`

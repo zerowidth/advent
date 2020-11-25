@@ -47,7 +47,6 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
 
   start = Time.now
 
-
   # gather arguments including args from a `with` call:
   args = Array(@args) + Array(args)
   kwargs = @kwargs.merge(kwargs)
