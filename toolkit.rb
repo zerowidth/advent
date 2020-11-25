@@ -28,8 +28,8 @@ end
 def with(sym, *args, **kwargs, &block)
   puts
   s = "with :#{sym} "
-  s << "#{args.map(&:inspect).join(", ")} " if args.length > 0
-  s << "#{kwargs.inspect[1..-2]} " if kwargs.length > 0
+  s << "#{args.map(&:inspect).join(", ")} " if args.length.positive?
+  s << "#{kwargs.inspect[1..-2]} " if kwargs.length.positive?
   s << "(with block) " if block
   puts "#{TERM_CYAN}#{s}#{TERM_RESET}"
   puts "-" * s.length
@@ -39,21 +39,24 @@ def with(sym, *args, **kwargs, &block)
   @block = block
 end
 
-def try(input, *args, expect: :puzzle_input, **kwargs)
-  file, line = *caller.first.split(":")
-  # get the first argument:
-  arg = File.readlines(file)[line.to_i - 1].scan(/try (\w+),?/).first.first
+def try(input, *args, expect: :expected, **kwargs)
+  if input.is_a?(PuzzleInput)
+    arg = "puzzle_input"
+  else
+    # read the source to get the argument name
+    file, line = *caller.first.split(":")
+    arg = File.readlines(file)[line.to_i - 1].scan(/try (\w+),?/).first&.first
+    arg ||= args.first.inspect
+  end
   puts
   puts "try #{TERM_YELLOW}#{arg}#{TERM_RESET}"
   puts "-" * (4 + arg.length)
 
   # maintain parity with "older" API, before kwargs, to differentiate a normal
   # try(example, expected, arg, arg) from try(input, arg, arg, expected: ...)
-  if expect == :puzzle_input && args.length > 0
+  if expect == :expected && args.length.positive?
     expect = args.shift
-    if expect.nil? # explicit 'nil' to skip over arguments, again "old" api
-      expect = :puzzle_input
-    end
+    expect = :expected if expect.nil? # explicit 'nil' to skip over arguments, again "old" api
   end
 
   start = Time.now
@@ -75,7 +78,7 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
   elapsed = Time.now - start
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
-  if expect == :puzzle_input # explicitly not set, this is newly calculated
+  if expect == :expected # explicitly not set, this is newly calculated
     puts "=> #{TERM_PURPLE}#{value.inspect}#{TERM_RESET}"
     puts
   elsif value == expect
@@ -87,9 +90,13 @@ def try(input, *args, expect: :puzzle_input, **kwargs)
   value
 end
 
+# for input checking in the very generic `try` helper
+class PuzzleInput < String
+end
+
 def puzzle_input
   file = caller.grep(%r(\d{4}/\d{2}\.rb)).first
-  File.read(file.split(":").first.sub(".rb", ".txt"))
+  PuzzleInput.new(File.read(file.split(":").first.sub(".rb", ".txt")))
 end
 
 class Integer
@@ -100,12 +107,12 @@ class Integer
   # @param [Integer] y
   # @return [Array<Integer>]
   def gcdext(y)
-    if self < 0
+    if negative?
       g, a, b = (-self).gcdext(y)
       return [g, -a, b]
     end
-    if y < 0
-      g, a, b = self.gcdext(-y)
+    if y.negative?
+      g, a, b = gcdext(-y)
       return [g, a, -b]
     end
     r0, r1 = self, y
@@ -113,18 +120,17 @@ class Integer
     a1 = b0 = 0
     until r1.zero?
       q = r0 / r1
-      r0, r1 = r1, r0 - q*r1
-      a0, a1 = a1, a0 - q*a1
-      b0, b1 = b1, b0 - q*b1
+      r0, r1 = r1, r0 - q * r1
+      a0, a1 = a1, a0 - q * a1
+      b0, b1 = b1, b0 - q * b1
     end
     [r0, a0, b0]
   end
 
   def inverse_mod(mod)
-    g, a, _ = gcdext(mod)
-    unless g == 1
-      raise ZeroDivisionError.new("#{self} has no inverse modulo #{mod}")
-    end
+    g, a, = gcdext(mod)
+    raise ZeroDivisionError, "#{self} has no inverse modulo #{mod}" unless g == 1
+
     a % mod
   end
 end
