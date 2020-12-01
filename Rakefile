@@ -52,7 +52,7 @@ desc "Create the next one"
 task :next do
   files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
   src = root / "template.rb"
-  last = (files.last || "0").succ
+  last = (files.last || "00").succ
   dest = root / year / "#{last}.rb"
   input = root / year / "#{last}.txt"
   FileUtils.cp src, dest
