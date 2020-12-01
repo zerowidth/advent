@@ -17,6 +17,7 @@ def root
 end
 
 def files_for_year
+  FileUtils.mkdir_p(root / year)
   (root / year).children.select { |f| f.basename.to_s =~ /\d{2}.rb/ }
 end
 
@@ -51,8 +52,9 @@ desc "Create the next one"
 task :next do
   files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
   src = root / "template.rb"
-  dest = root / year / "#{files.last.succ}.rb"
-  input = root / year / "#{files.last.succ}.txt"
+  last = (files.last || "0").succ
+  dest = root / year / "#{last}.rb"
+  input = root / year / "#{last}.txt"
   FileUtils.cp src, dest
   puts "created #{dest}"
   `pbpaste > #{input}`
