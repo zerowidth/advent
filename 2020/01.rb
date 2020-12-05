@@ -10,12 +10,13 @@ ex1 = <<-EX
 EX
 
 def n_sum(input, n)
-  input.split("\n").map(&:to_i)
-    .combination(n).detect { |args| args.sum == 2020 }&.inject(1, &:*)
+  input.each_line.map(&:to_i).combination(n).detect { |args| args.sum == 2020 }&.inject(1, &:*)
 end
+
 def part1(input)
   n_sum input, 2
 end
+
 def part2(input)
   n_sum input, 3
 end
