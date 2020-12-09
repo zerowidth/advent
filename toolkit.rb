@@ -153,4 +153,24 @@ module Enumerable
   def map_with(method)
     map { |item| send(method, item) }
   end
+
+  def tally_by(&fn)
+    group_by(&fn).to_h { |k, vs| [k, vs.size] }
+  end
+
+  def all_combinations(min_length: 1)
+    Enumerator.new do |y|
+      min_length.upto(length) do |len|
+        combination(len).each { |c| y << c }
+      end
+    end
+  end
+
+  def all_sequences(min_length: 1)
+    Enumerator.new do |y|
+      min_length.upto(length) do |len|
+        each_cons(len) { |seq| y << seq }
+      end
+    end
+  end
 end

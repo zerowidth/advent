@@ -25,25 +25,17 @@ EX
 
 def part1(input, preamble:)
   numbers = input.each_line.map(&:strip).map(&:to_i)
-  i = preamble
-  loop do
-    sums = numbers[i-preamble..i].combination(2).map(&:sum)
-    return numbers[i] unless sums.include?(numbers[i])
-    i +=1 
-    break unless numbers[i]
+  _, i = numbers.each_cons(preamble).with_index.detect do |pre, i|
+    !pre.combination(2).map(&:sum).include? numbers[preamble + i]
   end
+  numbers[preamble + i]
 end
 
 def part2(input, preamble:)
   numbers = input.each_line.map(&:strip).map(&:to_i)
   bad_sum = part1(input, preamble: preamble)
-
-  2.upto(numbers.length) do |len|
-    if found = numbers.each_cons(len).detect { |range| range.sum == bad_sum }
-      return found.min + found.max
-    end
-  end
-  nil
+  sequence = numbers.all_sequences(min_length: 2).detect { |range| range.sum == bad_sum }
+  sequence.min + sequence.max
 end
 
 part 1
