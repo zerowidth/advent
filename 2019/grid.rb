@@ -43,6 +43,16 @@ end
 class Grid
   attr_reader :points
 
+  def self.parse(input)
+    grid = new
+    input.split("\n").each.with_index do |line, y|
+      line.each_char.with_index do |char, x|
+        grid[Vec[x, y]] = char
+      end
+    end
+    grid
+  end
+
   def initialize(&value_block)
     @points = {}
     @value_block = value_block
@@ -135,9 +145,13 @@ class Grid
     end
   end
 
+  def values
+    each.map(&:last)
+  end
+
   include Comparable
   def <=>(other)
-    @points <=> other.points
+    @points <=> other&.points
   end
 
   def points_set
