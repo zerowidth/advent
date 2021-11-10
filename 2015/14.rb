@@ -1,7 +1,6 @@
 require_relative "../toolkit"
 
 Reindeer = Struct.new(:name, :speed, :fly, :rest) do
-
   def initialize(*args)
     super
     @d = 0
@@ -54,9 +53,9 @@ def reindeer_scores(input, seconds)
   scores = Hash.new(0)
   seconds.times do |t|
     deer.each(&:integrate)
-    max_dist = deer.sort_by(&:d).last.d
+    max_dist = deer.max_by(&:d).d
     leaders = deer.select { |d| d.d == max_dist }
-    leaders.map { |l| scores[l.name] +=1 }
+    leaders.map { |l| scores[l.name] += 1 }
     # puts "t #{t+1} : #{Hash[ deer.map { |d| [d.name, d.d] } ] } #{scores.inspect}"
   end
   scores
@@ -69,7 +68,7 @@ EX
 
 part 1
 with :reindeer_distance, 1000
-try example, {"Comet" => 1120, "Dancer" => 1056}
+try example, { "Comet" => 1120, "Dancer" => 1056 }
 try puzzle_input
 with :reindeer_games, 2503
 try example, ["Comet", 2660]
@@ -77,10 +76,10 @@ try puzzle_input
 
 part 2
 with :reindeer_scores, 1
-try example, {"Comet" => 14, "Dancer" => 16}
+try example, { "Dancer" => 1 }
 with :reindeer_scores, 140
-try example, {"Comet" => 1, "Dancer" => 139}
+try example, { "Comet" => 1, "Dancer" => 139 }
 with :reindeer_scores, 1000
-try example, {"Dancer" => 689, "Comet" => 312}
+try example, { "Dancer" => 689, "Comet" => 312 }
 with :reindeer_scores, 2503
-try(puzzle_input) { |s| s.sort_by(&:last).last }
+try(puzzle_input) { |s| s.max_by(&:last) }
