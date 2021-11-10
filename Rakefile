@@ -37,7 +37,13 @@ end
 
 desc "Watch the latest puzzle for changes"
 task :watch do
-  sh "fswatch #{day_file} | xargs -n1 ruby"
+    # 2 second delay to coalesce double-writes from editors
+  sh "fswatch -l 2 . | egrep --line-buffered '20.*/[[:digit:]]+\\.rb' | xargs -n1 -I {} sh -c 'rake clear_term; echo {}; ruby {}'"
+end
+
+task :clear_term do
+  # clear iterm scrollback, makes for easy scroll-to-top when debugging
+  print "\033[2J\033[3J\033[1;1H"
 end
 
 desc "Run all puzzles for the given or current year. Specify `year=2017` to set the year."
