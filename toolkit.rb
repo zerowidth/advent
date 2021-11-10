@@ -40,7 +40,8 @@ def try(input, *args, expect: :expected, **kwargs)
   else
     # read the source to get the argument name
     file, line = *caller.first.split(":")
-    arg = File.readlines(file)[line.to_i - 1].scan(/try (\w+),?/).first&.first
+    arg = File.readlines(file)[line.to_i - 1].scan(/try (\S+),?/).first&.first
+    arg = arg.sub(/,$/,"") if arg
     arg ||= args.first.inspect
   end
   puts
