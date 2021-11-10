@@ -249,5 +249,5 @@ GRIDS
 
 try ex1, 10, expect: expected
 
-# with :part2, 200
-# try(puzzle_input) { |grids| grids.map { |g| g.count { |_p, v| v == "#" } }.sum }
+with :part2, 200
+try(puzzle_input) { |grids| grids.map { |g| g.count { |_p, v| v == "#" } }.sum }
