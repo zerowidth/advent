@@ -30,7 +30,8 @@ class GraphSearch
 
     def initialize
       @debug = false
-      @heuristic = lambda { |_start, _goal| 0 }
+      @cost = ->(_a, _b) { 1 }
+      @heuristic = ->(_start, _goal) { 0 }
     end
   end
 
@@ -45,7 +46,7 @@ class GraphSearch
     puts msg if config.debug
   end
 
-  def path(start:, goal:)
+  def path(start:, goal: nil, &leaf)
     frontier = PriorityQueue.new
     frontier << Node.new(start, 0, -config.heuristic[start, goal])
     came_from = {}
@@ -54,7 +55,7 @@ class GraphSearch
     best = Float::INFINITY
     found = nil
 
-    debug "searching for best path from #{start} to #{goal}"
+    debug "searching for best path from #{start} to #{goal || "first valid path"}"
     iterations = 0
     until frontier.empty?
       iterations += 1
@@ -70,11 +71,11 @@ class GraphSearch
 
       config.each_step&.call start, current, came_from, cost_so_far
 
-      if current == goal && cost_so_far[current] < best
+      if ((goal && current == goal) || leaf.call(current)) && cost_so_far[current] < best
         debug "  => best so far, cost #{cost_so_far[current]}"
         best = cost_so_far[current]
         found = current
-        break
+        break if goal # not really a goal if we're looking for all valid paths
       end
 
       break if config.break_if && config.break_if[cost_so_far[current], best]

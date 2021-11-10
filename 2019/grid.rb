@@ -19,6 +19,10 @@ class Vec
     Vec[x - other.x, y - other.y]
   end
 
+  def *(scalar)
+    Vec[x * scalar, y * scalar]
+  end
+
   include Comparable
   def <=>(other)
     (x <=> other.x).zero? ? (y <=> other.y) : (x <=> other.x)

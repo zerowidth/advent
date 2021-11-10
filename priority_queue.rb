@@ -57,7 +57,7 @@ class PriorityQueue
   end
 end
 
-if $0 == __FILE__
+if $PROGRAM_NAME == __FILE__
   require 'minitest/autorun'
   require_relative 'priority_queue'
 

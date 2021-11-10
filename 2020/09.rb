@@ -24,15 +24,15 @@ ex1 = <<-EX
 EX
 
 def part1(input, preamble:)
-  numbers = input.each_line.map(&:strip).map(&:to_i)
+  numbers = input.numbers
   _, i = numbers.each_cons(preamble).with_index.detect do |pre, i|
-    !pre.combination(2).map(&:sum).include? numbers[preamble + i]
+    !pre.combination(2).any? { |a, b| numbers[preamble + i] == a + b }
   end
   numbers[preamble + i]
 end
 
 def part2(input, preamble:)
-  numbers = input.each_line.map(&:strip).map(&:to_i)
+  numbers = input.numbers
   bad_sum = part1(input, preamble: preamble)
   sequence = numbers.all_sequences(min_length: 2).detect { |range| range.sum == bad_sum }
   sequence.min + sequence.max

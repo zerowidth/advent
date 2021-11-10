@@ -98,7 +98,7 @@ end
 part 1
 with :part1
 try ex1, expect: 37
-# try puzzle_input
+try puzzle_input
 
 part 2
 with :part2

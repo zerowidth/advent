@@ -81,9 +81,16 @@ def try(input, *args, expect: :expected, **kwargs)
     puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
   else
     puts "=> #{TERM_RED}mismatch:#{TERM_RESET}\n"
-    puts Diffy::Diff.new(expect.to_s + "\n", value.to_s + "\n")
+    puts diff(expect, value)
+    exit 1
   end
   value
+end
+
+def diff(expected, value)
+  ex = expected.nil? ? "nil" : expected.to_s
+  val = value.nil? ? "nil" : value.to_s
+    puts Diffy::Diff.new(ex + "\n", val + "\n")
 end
 
 # for input checking in the very generic `try` helper
