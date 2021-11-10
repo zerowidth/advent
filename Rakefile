@@ -65,4 +65,5 @@ task :next do
   puts "created #{dest}"
   `pbpaste > #{input}`
   puts "created #{input}"
+  `code #{dest}`
 end
