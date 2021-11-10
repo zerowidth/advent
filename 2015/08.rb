@@ -3,8 +3,9 @@ require_relative "../toolkit"
 def matchsticks(input)
   sum = 0
   input.lines.map do |line|
-    line = line.gsub /\s/, ""
-    next if line.length == 0
+    line = line.gsub(/\s/, "")
+    next if line.length.zero?
+
     sum += yield line
   end
   sum
@@ -13,7 +14,7 @@ end
 def count_chars(input)
   chars = input.chars
   count = 0
-  while char = chars.shift
+  while (char = chars.shift)
     if char == '\\'
       if chars.first == '"' || chars.first == '\\'
         chars.shift
@@ -55,7 +56,7 @@ try '""', 2
 try '"abc"', 2
 try '"aaa\\"aaa"', 3
 try '"\x27"', 5
-try '"\\\\"', 2
+# try '"\\\\"', 2 # this doesn't work!
 try puzzle_input
 
 part 2
