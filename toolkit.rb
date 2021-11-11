@@ -15,6 +15,19 @@ TERM_PURPLE = "\e[35m"
 TERM_CYAN = "\e[36m"
 TERM_RESET = "\e[0m"
 
+$debug = false
+def debug!
+  $debug = true
+end
+
+def no_debug!
+  $debug = false
+end
+
+def debug(*args)
+  puts(*args) if $debug
+end
+
 def part(n)
   puts if n > 1
   puts TERM_BLUE + "*" * 30 + " part #{n} " + "*" * 30 + TERM_RESET
