@@ -46,7 +46,10 @@ class GraphSearch
     puts msg if config.debug
   end
 
+  # find either a path from start to the goal, or from start to all leaf nodes
   def path(start:, goal: nil, &leaf)
+    raise "must specify goal or leaf condition" if goal.nil? && leaf.nil?
+
     frontier = PriorityQueue.new
     frontier << Node.new(start, 0, -config.heuristic[start, goal])
     came_from = {}
@@ -71,7 +74,7 @@ class GraphSearch
 
       config.each_step&.call start, current, came_from, cost_so_far
 
-      if ((goal && current == goal) || leaf.call(current)) && cost_so_far[current] < best
+      if ((goal && current == goal) || leaf&.call(current)) && cost_so_far[current] < best
         debug "  => best so far, cost #{cost_so_far[current]}"
         best = cost_so_far[current]
         found = current
