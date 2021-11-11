@@ -1,13 +1,17 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    colorize (0.8.1)
     diffy (3.4.0)
+    progressbar (1.11.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  colorize
   diffy
+  progressbar
 
 BUNDLED WITH
    2.1.4

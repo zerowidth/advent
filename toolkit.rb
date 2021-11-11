@@ -1,19 +1,13 @@
 require "bundler"
 Bundler.setup
+require "progressbar"
+require "colorize"
+require "diffy"
 
 require "pp"
 require "set"
 
-require "diffy"
 Diffy::Diff.default_format = :color
-
-TERM_RED = "\e[31m"
-TERM_GREEN = "\e[32m"
-TERM_YELLOW = "\e[33m"
-TERM_BLUE = "\e[34m"
-TERM_PURPLE = "\e[35m"
-TERM_CYAN = "\e[36m"
-TERM_RESET = "\e[0m"
 
 $debug = false
 def debug!
@@ -30,7 +24,7 @@ end
 
 def part(n)
   puts if n > 1
-  puts TERM_BLUE + "*" * 30 + " part #{n} " + "*" * 30 + TERM_RESET
+  puts(("*" * 30 + " part #{n} " + "*" * 30).colorize(:blue))
 end
 
 def with(sym, *args, **kwargs, &block)
@@ -39,7 +33,7 @@ def with(sym, *args, **kwargs, &block)
   s << "#{args.map(&:inspect).join(", ")} " if args.length.positive?
   s << "#{kwargs.inspect[1..-2]} " if kwargs.length.positive?
   s << "(with block) " if block
-  puts "#{TERM_CYAN}#{s}#{TERM_RESET}"
+  puts s.colorize(:cyan)
   puts "-" * s.length
   @method = method(sym)
   @args = args
@@ -58,7 +52,7 @@ def try(input, *args, expect: :expected, **kwargs)
     arg ||= args.first.inspect
   end
   puts
-  puts "try #{TERM_YELLOW}#{arg}#{TERM_RESET}"
+  puts "try #{arg.colorize(:yellow)}"
   puts "-" * (4 + arg.length)
 
   # maintain parity with "older" API, before kwargs, to differentiate a normal
@@ -88,12 +82,12 @@ def try(input, *args, expect: :expected, **kwargs)
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
   if expect == :expected # explicitly not set, this is newly calculated
-    puts "=> #{TERM_PURPLE}#{value.inspect}#{TERM_RESET}"
+    puts "=> #{value.inspect.colorize(:purple)}"
     puts
   elsif value == expect
-    puts "=> #{TERM_GREEN}#{value.inspect}#{TERM_RESET}"
+    puts "=> #{value.inspect.colorize(:green)}"
   else
-    puts "=> #{TERM_RED}mismatch:#{TERM_RESET}\n"
+    puts "=> #{"mismatch:".colorize(:red)}\n"
     puts diff(expect, value)
     exit 1
   end
@@ -113,6 +107,20 @@ end
 def puzzle_input
   file = caller.grep(%r(\d{4}/\d{2}\.rb)).first
   PuzzleInput.new(File.read(file.split(":").first.sub(".rb", ".txt")))
+end
+
+module Enumerable
+  def each_with_progress(&block)
+    return each(&block) if $debug # print output or progress bar, not both
+
+    bar = ProgressBar.create(total: nil, format: "%a %c %r/sec", throttle_rate: 0.1)
+    each do |item|
+      bar.increment
+      yield item
+    end
+  ensure
+    bar.finish if bar
+  end
 end
 
 class Integer
