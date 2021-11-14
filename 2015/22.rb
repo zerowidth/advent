@@ -20,6 +20,10 @@ class Effect
     @mana_regen = mana_regen
   end
 
+  def expiring?
+    duration == 1
+  end
+
   def expired?
     duration.zero?
   end
@@ -78,16 +82,16 @@ class State
 
   def resolve_turns(spell, boss_damage, hard_mode: false)
     next_state = resolve_player_turn(spell, hard_mode: hard_mode)
-    puts "  #{next_state}"
+    debug "  #{next_state}"
     unless next_state.game_over?
       next_state = next_state.resolve_boss_turn(boss_damage)
-      puts "  #{next_state}"
+      debug "  #{next_state}"
     end
     next_state
   end
 
   def resolve_player_turn(spell, hard_mode: false)
-    puts "#{self} casting #{spell.name} for #{spell.cost} mana"
+    debug "#{self} casting #{spell.name} for #{spell.cost} mana"
 
     next_hp = hp
     next_mana = mana - spell.cost
@@ -132,7 +136,7 @@ class State
   end
 
   def resolve_boss_turn(boss_damage)
-    puts "#{self} boss attacking for #{boss_damage}"
+    debug "#{self} boss attacking for #{boss_damage}"
 
     next_hp = hp
     next_mana = mana
@@ -180,13 +184,13 @@ def least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: false)
       to.spells.last.cost
     end
     config.break_if = lambda do |cost, best|
-      (cost > best) || (cost >= 1242)
+      cost > best
     end
     config.neighbors = lambda do |state|
       return [] if state.game_over?
 
       spells = SPELLS.select do |spell|
-        spell.cost <= state.mana && !state.effects.map(&:name).include?(spell.name)
+        spell.cost <= state.mana && !state.effects.reject(&:expiring?).map(&:name).include?(spell.name)
       end
 
       spells.map do |spell|
@@ -239,18 +243,16 @@ with :part1, player_hp: 10, player_mana: 250
 try ex1, expect: 226 # Poison, Magic Missile
 try ex2, expect: 641 # Recharge, Shield, Drain, Poison, Magic Missile
 no_debug!
-# with :part1, player_hp: 50, player_mana: 500
-# try puzzle_input # 900
+with :part1, player_hp: 50, player_mana: 500
+try puzzle_input # 900
 
 part 2
 with :part2, player_hp: 10 + 2, player_mana: 250
 no_debug!
 # debug!
 try ex1, expect: 226
-# with :part2, player_hp: 10 + 5, player_mana: 250
-# try ex2, expect: 641
-# no_debug!
-# # must be < 1242 and > 900
-# # debug!
-# with :part2, player_hp: 50, player_mana: 500
-# try puzzle_input
+with :part2, player_hp: 10 + 5, player_mana: 250
+try ex2, expect: 641
+no_debug!
+with :part2, player_hp: 50, player_mana: 500
+try puzzle_input # 1216
