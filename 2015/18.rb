@@ -36,13 +36,16 @@ end
 def part1(input, steps)
   grid = Grid.parse(input)
 
+  bar = progress_bar(total: steps)
   steps.times do
     grid = next_grid(grid)
-    print "."
+    bar.advance
   end
   puts
 
   grid.to_s
+ensure
+  bar.finish
 end
 
 def fix_lights(grid)
@@ -58,14 +61,17 @@ def part2(input, steps)
   grid = Grid.parse(input)
   fix_lights(grid)
 
+  bar = progress_bar(total: steps)
   steps.times do
     grid = next_grid(grid)
     fix_lights(grid)
-    print "."
+    bar.advance
   end
   puts
 
   grid.to_s
+ensure
+  bar.finish
 end
 
 part 1
