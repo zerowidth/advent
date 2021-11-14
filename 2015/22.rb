@@ -47,7 +47,7 @@ SPELLS = [
   Spell.new("Drain", cost: 73, damage: 2, heal: 2),
   Spell.new("Shield", cost: 113, effect: Effect.new("Shield", duration: 6, armor: 7)),
   Spell.new("Poison", cost: 173, effect: Effect.new("Poison", duration: 6, damage: 3)),
-  Spell.new("Recharge", cost: 229, effect: Effect.new("Poison", duration: 5, mana_regen: 101)),
+  Spell.new("Recharge", cost: 229, effect: Effect.new("Recharge", duration: 5, mana_regen: 101)),
 ]
 
 class State
@@ -78,16 +78,16 @@ class State
 
   def resolve_turns(spell, boss_damage, hard_mode: false)
     next_state = resolve_player_turn(spell, hard_mode: hard_mode)
-    debug "  #{next_state}"
+    puts "  #{next_state}"
     unless next_state.game_over?
       next_state = next_state.resolve_boss_turn(boss_damage)
-      debug "  #{next_state}"
+      puts "  #{next_state}"
     end
     next_state
   end
 
   def resolve_player_turn(spell, hard_mode: false)
-    debug "turn #{turn} casting #{spell.name} for #{spell.cost} mana"
+    puts "#{self} casting #{spell.name} for #{spell.cost} mana"
 
     next_hp = hp
     next_mana = mana - spell.cost
@@ -97,7 +97,7 @@ class State
       debug "  hard mode, player takes 1 damage"
       next_hp -= 1
       if next_hp <= 0
-        debug "  player dies!"
+        debug "  hard player dies!"
         return next_turn(next_hp, next_mana, next_boss_hp, spell: spell)
       end
     end
@@ -132,7 +132,7 @@ class State
   end
 
   def resolve_boss_turn(boss_damage)
-    debug "turn #{turn} boss attacking for #{boss_damage}"
+    puts "#{self} boss attacking for #{boss_damage}"
 
     next_hp = hp
     next_mana = mana
@@ -180,7 +180,7 @@ def least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: false)
       to.spells.last.cost
     end
     config.break_if = lambda do |cost, best|
-      cost > best || cost >= 1242
+      (cost > best) || (cost >= 1242)
     end
     config.neighbors = lambda do |state|
       return [] if state.game_over?
@@ -213,12 +213,12 @@ def least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: false)
   win&.last
 end
 
-def part1(input, player_hp: 50, player_mana: 500)
+def part1(input, player_hp:, player_mana:)
   boss_hp, boss_damage = *get_boss(input)
   least_mana(player_hp, player_mana, boss_hp, boss_damage)
 end
 
-def part2(input, player_hp: 50, player_mana: 500)
+def part2(input, player_hp:, player_mana:)
   boss_hp, boss_damage = *get_boss(input)
   least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: true)
 end
@@ -238,17 +238,19 @@ with :part1, player_hp: 10, player_mana: 250
 # debug!
 try ex1, expect: 226 # Poison, Magic Missile
 try ex2, expect: 641 # Recharge, Shield, Drain, Poison, Magic Missile
-# no_debug!
-# with :part1
-# try puzzle_input # should be 900!
+no_debug!
+# with :part1, player_hp: 50, player_mana: 500
+# try puzzle_input # 900
 
 part 2
 with :part2, player_hp: 10 + 2, player_mana: 250
-debug!
+no_debug!
+# debug!
 try ex1, expect: 226
-with :part2, player_hp: 10 + 5, player_mana: 250
-try ex2, expect: 641
+# with :part2, player_hp: 10 + 5, player_mana: 250
+# try ex2, expect: 641
 # no_debug!
-# must be < 1242 and > 900
-with :part2
-try puzzle_input
+# # must be < 1242 and > 900
+# # debug!
+# with :part2, player_hp: 50, player_mana: 500
+# try puzzle_input
