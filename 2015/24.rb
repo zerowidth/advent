@@ -1,31 +1,35 @@
 require_relative "../toolkit"
 
-def part1(input)
-  weights = input.numbers.reverse
-  target = weights.sum / 3
+# Returns the smallest possible groups that can be split evenly.
+# Only returns the first set of groups with the shortest length.
+def equal_weights(weights, num_groups, progress: false)
+  return weights if num_groups == 1
+
+  target = weights.sum / num_groups
+  Enumerator.new do |y|
+    1.upto(weights.length).each do |len|
+      combinations = weights.combination(len)
+      combinations = combinations.to_a.with_progress(title: "combinations of len #{len}", length: true) if progress
+      found = combinations.select do |group|
+        # skip recursion if we can, it saves some time
+        group.sum == target &&
+          (num_groups <= 2 || equal_weights(weights - group, num_groups - 1).any?)
+      end
+      found.each { |f| y << f }
+      break if found.any?
+    end
+  end
+end
+
+def best_equal_groupings(input, num_groups = 3)
+  weights = input.numbers
+  target = weights.sum / num_groups
   puts "#{weights.length} weights, sum #{weights.sum}, target #{target}"
 
-  best_len = weights.length
-  first_groups = []
-  1.upto(weights.length).each do |len|
-    break if len >= best_len
-    found = weights.combination(len).with_progress(title: "combinations of len #{len}").select do |group|
-      group.sum == target
-    end
-    best_len = len if found.any?
-    first_groups.concat(found)
-  end
-  puts "found #{first_groups.length} potential groupings"
-  valid = first_groups.with_progress(title: "validating", length: true).select do |group|
-    # find a valid second and third group
-    rest = weights - group
-    rest.all_combinations.any? do |second|
-      second.sum == target && (rest - second).sum == target
-    end
-  end
-  puts "found #{valid.length} valid groupings"
+  groups = equal_weights(weights, num_groups, progress: true).to_a
+  puts "found #{groups.length} groupings"
 
-  best = valid.min_by do |group|
+  best = groups.min_by do |group|
     [group.length, group.reduce(1, &:*)]
   end
   puts "best group: #{best.inspect}"
@@ -46,11 +50,11 @@ ex1 = <<-EX
 EX
 
 part 1
-with :part1
+with :best_equal_groupings, 3
 try ex1, expect: 99
 try puzzle_input
 
-# part 2
-# with :part2
-# try ex1, expect: nil
-# try puzzle_input
+part 2
+with :best_equal_groupings, 4
+try ex1, expect: 44
+try puzzle_input
