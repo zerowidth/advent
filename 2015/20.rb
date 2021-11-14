@@ -39,7 +39,7 @@ end
 
 def part1(input)
   target = input.to_i
-  1.upto(target).each_with_progress do |house|
+  1.upto(target).with_progress.each do |house|
     sum = aliquot(house) * 10
     debug "house #{house} gifts #{sum}"
     break house if sum >= target
@@ -48,7 +48,7 @@ end
 
 def part2(input)
   target = input.to_i
-  1.upto(target).each_with_progress do |house|
+  1.upto(target).with_progress.each do |house|
     sum = lazy_visits(house, 50) * 11
     debug "house #{house} gifts #{sum}"
     break house if sum >= target

@@ -109,15 +109,6 @@ def puzzle_input
   PuzzleInput.new(File.read(file.split(":").first.sub(".rb", ".txt")))
 end
 
-module Enumerable
-  def each_with_progress(&block)
-    return each(&block) if $debug # print output or progress bar, not both
-
-    bar = TTY::ProgressBar.new(":elapsed :current :rate/sec", frequency: 10)
-    bar.iterate(each, &block)
-  end
-end
-
 class Integer
   # Thanks to https://gist.github.com/jingoro/2388745
   # Returns an array of the form `[gcd(x, y), a, b]`, where
@@ -179,7 +170,7 @@ module Enumerable
 
   def all_combinations(min_length: 1, max_length: length)
     Enumerator.new do |y|
-      min_length.upto(max_length) do |len|
+      min_length.upto(max_length).each do |len|
         combination(len).each { |c| y << c }
       end
     end
@@ -191,5 +182,13 @@ module Enumerable
         each_cons(len) { |seq| y << seq }
       end
     end
+  end
+
+  def with_progress(title: nil, length: false)
+    title = title ? "#{title}: " : ""
+    bar = length ? " [:bar]" : ""
+    total = length ? self.length : nil
+    name = "#{title}:elapsed :current :rate/sec#{bar}"
+    TTY::ProgressBar.new(name, frequency: 10, total: total, bar_format: :dot).iterate(self)
   end
 end
