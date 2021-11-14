@@ -182,9 +182,9 @@ module Enumerable
     group_by(&fn).to_h { |k, vs| [k, vs.size] }
   end
 
-  def all_combinations(min_length: 1)
+  def all_combinations(min_length: 1, max_length: length)
     Enumerator.new do |y|
-      min_length.upto(length) do |len|
+      min_length.upto(max_length) do |len|
         combination(len).each { |c| y << c }
       end
     end
