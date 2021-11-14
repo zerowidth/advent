@@ -20,7 +20,7 @@ class Effect
     @mana_regen = mana_regen
   end
 
-  def done?
+  def expired?
     duration.zero?
   end
 
@@ -31,6 +31,7 @@ end
 
 class Spell
   attr_reader :name, :cost, :damage, :armor, :heal, :effect
+
   def initialize(name, cost:, damage: 0, armor: 0, heal: 0, effect: nil)
     @name = name
     @cost = cost
@@ -49,105 +50,177 @@ SPELLS = [
   Spell.new("Recharge", cost: 229, effect: Effect.new("Poison", duration: 5, mana_regen: 101)),
 ]
 
-def part1(input, player_hp: 50, player_mana: 500)
-  bhp, boss_damage = *get_boss(input)
+class State
+  attr_reader :turn, :hp, :mana, :boss_hp, :effects, :spells
 
-  resolve_turns = lambda do |hp, mana, boss_hp, effects = [], spells = []|
-    indent = "->" * spells.length
-    efs = "[#{effects.map { |e| "#{e.name} (#{e.duration})" }.join(", ")}]"
-    debug "#{indent}player turn: #{hp} hp #{mana} mana, boss #{boss_hp} hp, effects: #{efs}, spells: [#{spells.map(&:name).join(", ")}]"
+  def initialize(turn, hp, mana, boss_hp, effects = [], spells = [])
+    @turn, @hp, @mana, @boss_hp, @effects, @spells = turn, hp, mana, boss_hp, effects, spells
+  end
 
-    # figure out what spell to cast
-    SPELLS.each do |spell|
-      next if effects.map(&:name).include?(spell.effect&.name)
-      next unless spell.cost <= mana
+  def next_turn(next_hp, next_mana, next_boss_hp, spell: nil)
+    next_effects = effects.map(&:next).reject(&:expired?)
+    next_effects << spell.effect if spell&.effect
+    next_spells = spell ? spells + [spell] : spells
+    self.class.new(turn + 1, next_hp, next_mana, next_boss_hp, next_effects, next_spells)
+  end
 
-      debug "#{indent}  casting #{spell.name}"
+  def game_over?
+    player_dead? || player_wins?
+  end
 
-      # see what happens if we cast this spell:
-      next_hp = hp
-      next_mana = mana - spell.cost
-      next_boss_hp = boss_hp
-      next_effects = effects + (spell.effect ? [spell.effect] : [])
+  def player_dead?
+    hp <= 0
+  end
 
-      # resolve effects
-      regen = next_effects.map(&:mana_regen).sum
-      if regen.positive?
-        next_mana += regen
-        debug "#{indent}    mana regens #{regen}, now #{next_mana}"
-      end
+  def player_wins?
+    hp > 0 && boss_hp <= 0
+  end
 
-      effect_damage = next_effects.map(&:damage).sum
-      if effect_damage.positive?
-        next_boss_hp -= effect_damage
-        debug "#{indent}    effects damage #{effect_damage}, boss hp now #{next_boss_hp}"
-        if next_boss_hp < 0
-          debug "#{indent}  boss dead"
-          return spells
-        end
-      end
+  def resolve_turns(spell, boss_damage, hard_mode: false)
+    next_state = resolve_player_turn(spell, hard_mode: hard_mode)
+    debug "  #{next_state}"
+    unless next_state.game_over?
+      next_state = next_state.resolve_boss_turn(boss_damage)
+      debug "  #{next_state}"
+    end
+    next_state
+  end
 
-      if spell.heal.positive?
-        debug "#{indent}    spell heals #{spell.heal}"
-        next_hp = hp + spell.heal
-      end
+  def resolve_player_turn(spell, hard_mode: false)
+    debug "turn #{turn} casting #{spell.name} for #{spell.cost} mana"
 
-      if spell.damage.positive?
-        next_boss_hp -= spell.damage
-        debug "#{indent}  player spell attacks for #{spell.damage}, boss now #{next_boss_hp}"
-        if next_boss_hp < 0
-          debug "#{indent}  boss dead"
-          return spells
-        end
-      end
+    next_hp = hp
+    next_mana = mana - spell.cost
+    next_boss_hp = boss_hp
 
-      # ---- boss turn -----
-      debug "#{indent}boss turn: #{next_hp} hp #{next_mana} mana, boss #{next_boss_hp} hp"
-
-      # iterate effects
-      next_effects = next_effects.map(&:next).reject(&:done?)
-
-      regen = next_effects.map(&:mana_regen).sum
-      if regen.positive?
-        next_mana += regen
-        debug "#{indent}    mana regens #{regen}, now #{next_mana}"
-      end
-
-      effect_damage = next_effects.map(&:damage).sum
-      if effect_damage.positive?
-        next_boss_hp -= effect_damage
-        debug "#{indent}    effects damage #{effect_damage}, boss hp now #{next_boss_hp}"
-        if next_boss_hp < 0
-          debug "#{indent}  boss dead"
-          return spells
-        end
-      end
-
-      # boss attacks
-      armor = next_effects.map(&:armor).sum
-      damage = [boss_damage - armor, 1].max
-      next_hp -= damage
-      debug "#{indent}  boss attacks for #{damage}: player now #{next_hp}"
+    if hard_mode
+      debug "  hard mode, player takes 1 damage"
+      next_hp -= 1
       if next_hp <= 0
-        debug "#{indent}  player died"
-        return nil
-      end
-
-      # iterate effects before resolving the next turn
-      next_effects = next_effects.map(&:next).reject(&:done?)
-
-      if (next_best = resolve_turns.call next_hp, next_mana, next_boss_hp, next_effects, spells + [spell])
-        return next_best
+        debug "  player dies!"
+        return next_turn(next_hp, next_mana, next_boss_hp, spell: spell)
       end
     end
 
-    debug "#{indent}  player could not cast any spells, and loses."
-    nil
+    regen = effects.map(&:mana_regen).sum
+    debug "  regen #{regen} mana" if regen > 0
+    next_mana += regen
+    damage = effects.map(&:damage).sum
+    debug "  damage #{damage}" if damage > 0
+    next_boss_hp -= damage
+
+    if next_boss_hp <= 0
+      debug "  boss dies!"
+      return next_turn(next_hp, next_mana, next_boss_hp, spell: spell)
+    end
+
+    debug "  cast #{spell.name}"
+
+    if spell.damage > 0
+      debug "    damage #{spell.damage}"
+      next_boss_hp -= spell.damage
+    end
+
+    if spell.heal > 0
+      debug "    #{spell.name} heals #{spell.heal}"
+      next_hp += spell.heal
+    end
+
+    debug "  boss dies!" if next_boss_hp <= 0
+
+    next_turn(next_hp, next_mana, next_boss_hp, spell: spell)
   end
 
-  spells = resolve_turns.call player_hp, player_mana, bhp
-  puts "spells: #{spells.map(&:name).join(", ")}"
-  spells.map(&:cost).sum
+  def resolve_boss_turn(boss_damage)
+    debug "turn #{turn} boss attacking for #{boss_damage}"
+
+    next_hp = hp
+    next_mana = mana
+    next_boss_hp = boss_hp
+
+    regen = effects.map(&:mana_regen).sum
+    debug "  regen #{regen} mana" if regen > 0
+    next_mana += regen
+    damage = effects.map(&:damage).sum
+    debug "  damage #{damage}" if damage > 0
+    next_boss_hp -= damage
+    armor = effects.map(&:armor).sum
+    debug "  armor #{armor}" if armor > 0
+
+    if next_boss_hp <= 0
+      debug "  boss dies!"
+      return next_turn(next_hp, next_mana, next_boss_hp)
+    end
+
+    # attack player
+    damage = [boss_damage - armor, 1].max
+    debug "  boss attacks for #{damage}"
+    next_hp -= damage
+    debug "  player dies!" if next_hp <= 0
+
+    next_turn(next_hp, next_mana, next_boss_hp)
+  end
+
+  def to_s
+    efs = "[#{effects.map { |e| "#{e.name} (#{e.duration})" }.join(", ")}]"
+    sps = "[#{spells.map(&:name).join(", ")}]"
+    cost = spells.map(&:cost).sum
+    "<#{cost} turn #{turn}: player #{hp} hp #{mana} mana; boss #{boss_hp} hp; effects #{efs}, spells #{sps}>"
+  end
+
+  def inspect
+    to_s
+  end
+end
+
+def least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: false)
+  search = GraphSearch.new do |config|
+    config.debug = $debug
+    config.cost = lambda do |_from, to|
+      to.spells.last.cost
+    end
+    config.break_if = lambda do |cost, best|
+      cost > best || cost >= 1242
+    end
+    config.neighbors = lambda do |state|
+      return [] if state.game_over?
+
+      spells = SPELLS.select do |spell|
+        spell.cost <= state.mana && !state.effects.map(&:name).include?(spell.name)
+      end
+
+      spells.map do |spell|
+        state.resolve_turns(spell, boss_damage, hard_mode: hard_mode)
+      end.reject(&:player_dead?)
+    end
+  end
+
+  start = State.new(1, player_hp, player_mana, boss_hp)
+  puts "searching from: #{start}"
+  win = search.path(start: start) do |state|
+    puts "*** player wins :#{state}" if state.player_wins?
+    state.player_wins?
+  end
+
+  if win&.first&.any?
+    puts "winning spells: #{win.first.last.spells.map(&:name)}"
+    debug "-----"
+    win.first.last.spells.reduce(start) do |state, spell|
+      state.resolve_turns(spell, boss_damage, hard_mode: hard_mode)
+    end
+    debug "-----"
+  end
+  win&.last
+end
+
+def part1(input, player_hp: 50, player_mana: 500)
+  boss_hp, boss_damage = *get_boss(input)
+  least_mana(player_hp, player_mana, boss_hp, boss_damage)
+end
+
+def part2(input, player_hp: 50, player_mana: 500)
+  boss_hp, boss_damage = *get_boss(input)
+  least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: true)
 end
 
 ex1 = <<EX
@@ -155,15 +228,27 @@ Hit Points: 13
 Damage: 8
 EX
 
+ex2 = <<EX
+Hit Points: 14
+Damage: 8
+EX
+
 part 1
 with :part1, player_hp: 10, player_mana: 250
-debug!
-try ex1, expect: 226 # poison then magic missile
+# debug!
+try ex1, expect: 226 # Poison, Magic Missile
+try ex2, expect: 641 # Recharge, Shield, Drain, Poison, Magic Missile
 # no_debug!
-with :part1
-try puzzle_input
+# with :part1
+# try puzzle_input # should be 900!
 
-# part 2
-# with :part2
-# try ex1, expect: nil
-# try puzzle_input
+part 2
+with :part2, player_hp: 10 + 2, player_mana: 250
+debug!
+try ex1, expect: 226
+with :part2, player_hp: 10 + 5, player_mana: 250
+try ex2, expect: 641
+# no_debug!
+# must be < 1242 and > 900
+with :part2
+try puzzle_input

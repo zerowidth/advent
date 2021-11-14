@@ -1,7 +1,6 @@
 require_relative "./priority_queue"
 
 class GraphSearch
-
   class Node
     attr_reader :position, :cost, :priority
 
@@ -40,6 +39,7 @@ class GraphSearch
   def initialize
     @config = Config.new
     yield @config
+    raise "must specify neighbors function" unless config.neighbors
   end
 
   def debug(msg)
@@ -81,16 +81,16 @@ class GraphSearch
         break if goal # not really a goal if we're looking for all valid paths
       end
 
-      break if config.break_if && config.break_if[cost_so_far[current], best]
+      break if config.break_if&.call(cost_so_far[current], best)
 
-      neighbors = config.neighbors[current]
+      neighbors = config.neighbors.call(current)
       debug "  neighbors: #{neighbors.inspect}"
       neighbors.each do |neighbor|
         if came_from[current] == neighbor
           debug "  #{neighbor} skipping, just came from it"
           next
         end
-        new_cost = cost_so_far[current] + config.cost[current, neighbor]
+        new_cost = cost_so_far[current] + config.cost.call(current, neighbor)
         debug "    #{neighbor}: new cost #{new_cost}, old #{cost_so_far[neighbor] || "nil"}"
         if !cost_so_far.key?(neighbor) || new_cost < cost_so_far[neighbor]
           debug "    -> updating, #{neighbor} came from #{current}"
