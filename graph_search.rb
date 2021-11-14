@@ -50,6 +50,10 @@ class GraphSearch
   def path(start:, goal: nil, &leaf)
     raise "must specify goal or leaf condition" if goal.nil? && leaf.nil?
 
+    unless config.debug
+      bar = TTY::ProgressBar.new("searching: :current iterations at :rate/sec in :elapsed", frequency: 10)
+    end
+
     frontier = PriorityQueue.new
     frontier << Node.new(start, 0, -config.heuristic[start, goal])
     came_from = {}
@@ -62,6 +66,7 @@ class GraphSearch
     iterations = 0
     until frontier.empty?
       iterations += 1
+      bar.advance unless config.debug
 
       current_node = frontier.pop
       current = current_node.position
@@ -105,6 +110,8 @@ class GraphSearch
     debug "finished in #{iterations} iterations"
 
     return [reconstruct_path(start, found, came_from), cost_so_far[found]] if found
+  ensure
+    bar.finish unless config.debug
   end
 
   def reconstruct_path(start, current, came_from)

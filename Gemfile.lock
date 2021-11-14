@@ -3,7 +3,15 @@ GEM
   specs:
     colorize (0.8.1)
     diffy (3.4.0)
-    progressbar (1.11.0)
+    strings-ansi (0.2.0)
+    tty-cursor (0.7.1)
+    tty-progressbar (0.18.2)
+      strings-ansi (~> 0.2)
+      tty-cursor (~> 0.7)
+      tty-screen (~> 0.8)
+      unicode-display_width (>= 1.6, < 3.0)
+    tty-screen (0.8.1)
+    unicode-display_width (2.1.0)
 
 PLATFORMS
   ruby
@@ -11,7 +19,7 @@ PLATFORMS
 DEPENDENCIES
   colorize
   diffy
-  progressbar
+  tty-progressbar
 
 BUNDLED WITH
    2.1.4

@@ -8,6 +8,10 @@ class PriorityQueue
     @elements = [nil]
   end
 
+  def size
+    @elements.size
+  end
+
   def <<(element)
     @elements << element
     bubble_up(@elements.size - 1)

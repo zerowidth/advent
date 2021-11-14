@@ -1,5 +1,5 @@
 source "https://rubygems.org"
 
 gem "diffy"
-gem "progressbar"
+gem "tty-progressbar"
 gem "colorize"

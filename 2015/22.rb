@@ -202,7 +202,6 @@ def least_mana(player_hp, player_mana, boss_hp, boss_damage, hard_mode: false)
   start = State.new(1, player_hp, player_mana, boss_hp)
   puts "searching from: #{start}"
   win = search.path(start: start) do |state|
-    puts "*** player wins :#{state}" if state.player_wins?
     state.player_wins?
   end
 

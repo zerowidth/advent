@@ -1,6 +1,6 @@
 require "bundler"
 Bundler.setup
-require "progressbar"
+require "tty-progressbar"
 require "colorize"
 require "diffy"
 
@@ -113,13 +113,8 @@ module Enumerable
   def each_with_progress(&block)
     return each(&block) if $debug # print output or progress bar, not both
 
-    bar = ProgressBar.create(total: nil, format: "%a %c %r/sec", throttle_rate: 0.1)
-    each do |item|
-      bar.increment
-      yield item
-    end
-  ensure
-    bar.finish if bar
+    bar = TTY::ProgressBar.new(":elapsed :current :rate/sec", frequency: 10)
+    bar.iterate(each, &block)
   end
 end
 
