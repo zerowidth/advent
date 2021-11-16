@@ -1,10 +1,11 @@
 require_relative "../toolkit"
 
 def spiral_distance(n)
+  return 0 if n == 1
   radius = 1
-  radius +=2 while n > radius*radius
+  radius += 2 while n > radius * radius
   dist = (radius - 1) / 2
-  centers = ((radius * radius ) - dist).step(by: -dist * 2).take(4)
+  centers = ((radius * radius) - dist).step(by: -dist * 2).take(4)
   nearest = centers.map { |c| (n - c).abs }
   nearest.min + dist
 end
@@ -43,7 +44,7 @@ def generate_spiral(entries, &block)
   spiral = {}
 
   1.upto(entries) do |n|
-    spiral[ [x, y] ] = yield spiral, n, x, y
+    spiral[[x, y]] = yield spiral, n, x, y
     if n == r * r
       x += 1
       r += 2
@@ -78,7 +79,7 @@ def print_spiral(spiral)
 
   ymin.upto(ymax) do |y|
     xmin.upto(xmax) do |x|
-      if v = spiral[ [x,y] ]
+      if v = spiral[[x, y]]
         print v.to_s.rjust(size)
       else
         print " " * size
@@ -86,7 +87,6 @@ def print_spiral(spiral)
     end
     puts
   end
-
 end
 
 # s = generate_spiral(100) { |h, n, x, y| n }
@@ -94,10 +94,10 @@ end
 
 def adjacent_sum(grid, cx, cy)
   sum = 0
-  (cx-1).upto(cx+1) do |x|
-    (cy-1).upto(cy+1) do |y|
+  (cx - 1).upto(cx + 1) do |x|
+    (cy - 1).upto(cy + 1) do |y|
       next if x == cx && y == cy
-      sum += grid.fetch([x,y], 0)
+      sum += grid.fetch([x, y], 0)
     end
   end
   sum
