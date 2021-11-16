@@ -82,7 +82,7 @@ def try(input, *args, expect: :expected, **kwargs)
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
   if expect == :expected # explicitly not set, this is newly calculated
-    puts "=> #{value.inspect.colorize(:purple)}"
+    puts "=> #{value.inspect.colorize(:magenta)}"
     puts
   elsif value == expect
     puts "=> #{value.inspect.colorize(:green)}"
