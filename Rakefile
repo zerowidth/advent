@@ -1,4 +1,5 @@
 require "pathname"
+require "open3"
 
 task default: %w[latest]
 
@@ -37,8 +38,31 @@ end
 
 desc "Watch the latest puzzle for changes"
 task :watch do
-    # 2 second delay to coalesce double-writes from editors
-  sh "fswatch -l 2 . | egrep --line-buffered '20.*/[[:digit:]]+\\.rb' | xargs -n1 -I {} sh -c 'rake clear_term; echo {}; ruby {}'"
+  running = false
+  Signal.trap("INT") do
+    if running
+      running = false
+    else
+      exit 1
+    end
+  end
+
+  puts "waiting for changes..."
+
+  loop do
+    changed = Open3.capture2("fswatch -1 -l 1 . | egrep --line-buffered '20.*/[[:digit:]]+\\.rb'").first
+    to_run = changed.lines.first&.strip
+    next unless to_run
+
+    # clear iterm scrollback, makes for easy scroll-to-top when debugging
+    print "\033[2J\033[3J\033[1;1H"
+    running = true
+    sh "ruby #{to_run}" do |ok, res|
+      STDERR.puts "exit: #{res}" unless ok
+      STDERR.puts
+    end
+    running = false
+  end
 end
 
 task :clear_term do
