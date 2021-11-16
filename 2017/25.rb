@@ -80,7 +80,7 @@ class Machine
   end
 
   def run_until_diagnostic
-    @after.times do |n|
+    @after.times_with_progress do |n|
       # print "step #{n+1}: #{@state} @#{@tape.pos}:#{@tape.read} : "
       rules = @rules.fetch(@state)
       val = @tape.read
@@ -90,9 +90,9 @@ class Machine
       @tape.move move
       @state = nextstate
       # puts @tape.ones.inspect
-      print "state #{n}\r" if n % 1000 == 0
+      # print "state #{n}\r" if n % 1000 == 0
     end
-    puts
+    # puts
   end
 
   def diagnostic
