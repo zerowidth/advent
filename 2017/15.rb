@@ -10,27 +10,27 @@ def solution(input)
 
   count = 0
 
-  40_000_000.times do |n|
-    print "\r#{n}" if n % 10_000 == 0
+  40_000_000.times_with_progress do |n|
+    # print "\r#{n}" if n % 10_000 == 0
     a = (a * af) % div
     b = (b * bf) % div
     match = (a & 0xffff) == (b & 0xffff)
     count += 1 if match
   end
-  puts
+  # puts
   count
 end
 
 def picky(input)
   a, b = *input.lines.map do |line|
-    line.split(" ").last.to_i
+    line.split.last.to_i
   end
   af = 16807
   bf = 48271
   div = 2147483647
 
   count = 0
-  5_000_000.times do |n|
+  5_000_000.times_with_progress do |n|
     loop do
       a = (a * af) % div
       break if a % 4 == 0
@@ -41,9 +41,9 @@ def picky(input)
     end
     match = (a & 0xffff) == (b & 0xffff)
     count += 1 if match
-    print "\r#{n}" if n % 10_000 == 0
+    # print "\r#{n}" if n % 10_000 == 0
   end
-  puts
+  # puts
   count
 end
 
