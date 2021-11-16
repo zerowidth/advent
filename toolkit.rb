@@ -143,6 +143,18 @@ class Integer
 
     a % mod
   end
+
+  # more efficient than shoving .times.each through an enumerator
+  def times_with_progress(title: nil)
+    bar = progress_bar(title: title, total: self)
+    increment = [self / 10_000, 1].max # only increment this many times
+    times do |n|
+      yield n
+      bar.advance(increment) if n % increment == 0
+    end
+  ensure
+    bar.finish
+  end
 end
 
 class String
@@ -201,6 +213,5 @@ def progress_bar(title: nil, total: nil)
   end
 
   name = "#{title}:elapsed#{eta} :current :rate/sec#{bar}"
-
   TTY::ProgressBar.new(name, frequency: 10, total: total, bar_format: :dot)
 end
