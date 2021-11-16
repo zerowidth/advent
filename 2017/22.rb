@@ -57,7 +57,7 @@ def show(grid, current=nil)
       pos = [x, y]
       char = grid[pos]
       if current == pos
-        char = "#{TERM_RED}#{char}#{TERM_RESET}"
+        char = char.red
       end
       print char
     end
