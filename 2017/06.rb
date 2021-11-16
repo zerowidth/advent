@@ -1,5 +1,4 @@
 require_relative "../toolkit"
-require "set"
 
 def reallocate(input, loop_size = false)
   blocks = input.split(/\s+/).map(&:to_i)
