@@ -1,98 +1,65 @@
 require_relative "../toolkit"
-require "set"
-
-Prog = Struct.new(:name, :weight, :children, :parent)
 
 def parse_tree(input)
-  nodes_by_name = {}
-  parents = {}
-  children_by_name = Hash.new { |h, k| h[k] = [] }
+  nodes = []
   weights = {}
+  child_of = {}
+  children_of = Hash.new { |h, k| h[k] = [] }
+
   input.lines.map do |line|
-    if line =~ /(\w+) \((\d+)\)(?: -> (.*))?/
-      name = $1
-      weight = $2.to_i
-      nodes_by_name[name] = Node.new name, weight
-      if $3
-        $3.split(/, /).each do |child|
-          parents[child] = name
-          children_by_name[name] << child
-        end
-      end
-    else
-      puts "what? #{line.inspect}"
+    raise "what? #{line.inspect}" unless line =~ /(\w+) \((\d+)\)(?: -> (.*))?/
+
+    name = $1
+    weight = $2.to_i
+    nodes << name
+    weights[name] = weight
+    $3&.split(/, /)&.each do |child|
+      children_of[name] << child
+      child_of[child] = name
     end
   end
 
-  puts "parents:"
-  pp parents
-  puts "children:"
-  pp children_by_name
+  # root is the only node that isn't a child
+  root = nodes.detect { |n| child_of[n].nil? }
+  make_node = lambda do |name|
+    children = children_of[name].map { |c| make_node.call(c) }
+    Node.new name, weights.fetch(name), children
+  end
+  nodes = make_node[root]
 
-  bottom = children_by_name.keys.detect { |k| parents[k] == nil }
-  puts "bottom #{bottom}"
-
-
-
-  # yield Tree.new(nodes, weights)
-
-  nil
+  yield Tree.new(nodes)
 end
 
 Node = Struct.new(:name, :weight, :children) do
   def weight_with_children
-    children.map(&:weight_with_children).sum
+    @weight_with_children ||= weight + children.map(&:weight_with_children).sum
   end
 end
 
 class Tree
   attr_reader :root
 
-  def initialize(nodes, weights)
-    @nodes = nodes
-    @node_weights = weights
-    @weights = {}
-    @root = find_root
-    save_weight_for(@root)
-  end
-
-  def find_root
-    supported = Set.new
-    @nodes.each do |parent, children|
-      children.each { |c| supported << c }
-    end
-    (Set.new(@nodes.keys) - supported).to_a.first
+  def initialize(root)
+    @root = root
   end
 
   def unbalanced_diff
-    node, expected = *find_unbalanced(root)
-    child_weights = @nodes[node].map {|c| @weights[c] }.sum
-    weight = @node_weights[node]
-    puts "#{node} should be #{expected} but is #{weight + child_weights}"
-    weight - (weight + child_weights - expected)
-  end
+    return unless (node, expected = find_unbalanced(root))
 
-  def save_weight_for(node)
-    weight = @node_weights[node] + @nodes[node].map { |child| save_weight_for(child) }.sum
-    @weights[node] = weight
-    weight
+    puts "#{node.name} should be #{expected} but is #{node.weight_with_children}"
+    node.weight - (node.weight_with_children - expected)
   end
 
   def find_unbalanced(node)
-    puts "checking #{node}"
-    if children = @nodes[node]
-      weights = children.map { |c| @weights[c] }
-      count_by_weight = Hash[*weights.group_by{|v|v}.flat_map {|w,c| [c.length, w]}]
-      if odd_one_out = children.zip(weights).detect {|c,w| w == count_by_weight[1]}
-        odd_one_out = odd_one_out.first
-        puts "#{node} children has odd one out: #{odd_one_out}"
-        expected = count_by_weight.detect {|c, w| c != 1 }.last
-        return find_unbalanced(odd_one_out) || [odd_one_out, expected]
-      else
-        puts "#{node}: children balanced"
-      end
-    end
-    nil
+    puts "checking #{node.name}"
+    return nil unless node.children.any?
+
+    by_weight = node.children.group_by(&:weight_with_children)
+    return nil unless (unbalanced = by_weight.detect { |_w, cs| cs.length == 1 }&.last&.first)
+
+    expected_weight = by_weight.detect { |_w, cs| cs.length > 1 }.first
+    puts "#{unbalanced.name} is unbalanced, expected #{expected_weight}"
+    find_unbalanced(unbalanced) || [unbalanced, expected_weight]
   end
 end
 
@@ -113,11 +80,11 @@ cntj (57)
 EX
 
 part 1
-with(:parse_tree) { |t| t.root }
+with(:parse_tree) { |tree| tree.root.name }
 try example, "tknk"
-# try puzzle_input
+try puzzle_input
 
-# part 2
-# with(:parse_tree) { |t| t.unbalanced_diff }
-# try example, 60
-# try puzzle_input
+part 2
+with(:parse_tree, &:unbalanced_diff)
+try example, 60
+try puzzle_input
