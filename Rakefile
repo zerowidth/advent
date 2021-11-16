@@ -1,5 +1,9 @@
+require "bundler"
+Bundler.setup
+require "colorize"
+
 require "pathname"
-require "open3"
+require "pty"
 
 task default: %w[latest]
 
@@ -36,9 +40,35 @@ task :latest do
   sh "ruby", day_file
 end
 
+# Waits for the first matching file, then yields it.
+# Once the block returns, clear any remaining reads, then repeat the loop.
+def on_file_change(pattern)
+  # 2-second latency because vscode touches a saved file twice
+  # ref: https://github.com/nodejs/node/issues/6112
+  PTY.spawn("fswatch .") do |stdout, stdin, _pid|
+    stdin.close
+
+    loop do
+      # print this once at the beginning of each loop
+      puts "waiting for changes...".colorize(:cyan)
+
+      # wait for a matching file
+      while (line = stdout.gets.strip)
+        break if line =~ pattern
+      end
+
+      yield line
+
+      # flush any events that happened in the meantime
+      stdout.gets while IO.select([stdout], [], [], 0)
+    end
+  end
+end
+
 desc "Watch the latest puzzle for changes"
 task :watch do
   running = false
+
   Signal.trap("INT") do
     if running
       running = false
@@ -47,27 +77,28 @@ task :watch do
     end
   end
 
-  puts "waiting for changes..."
-
-  loop do
-    changed = Open3.capture2("fswatch -1 -l 1 . | egrep --line-buffered '20.*/[[:digit:]]+\\.rb'").first
-    to_run = changed.lines.first&.strip
-    next unless to_run
+  last = nil
+  on_file_change(/\.rb$/) do |file|
+    matched = file =~ %r{\d{4}/\d{2}\.rb}
 
     # clear iterm scrollback, makes for easy scroll-to-top when debugging
-    print "\033[2J\033[3J\033[1;1H"
+    print "\033[2J\033[3J\033[1;1H" if matched || last
+
+    if matched
+      last = file
+    elsif last
+      puts "#{file} changed, rerunning last"
+    else
+      next
+    end
+
     running = true
-    sh "ruby #{to_run}" do |ok, res|
-      STDERR.puts "exit: #{res}" unless ok
-      STDERR.puts
+    sh "ruby #{last}" do |ok, res|
+      warn res.to_s.colorize(:red) unless ok
+      puts
     end
     running = false
   end
-end
-
-task :clear_term do
-  # clear iterm scrollback, makes for easy scroll-to-top when debugging
-  print "\033[2J\033[3J\033[1;1H"
 end
 
 desc "Run all puzzles for the given or current year. Specify `year=2017` to set the year."
