@@ -7,16 +7,17 @@ def bridges(input)
 
   bridges = []
   ports.each do |start|
-    next unless start.any? {|s| s == 0}
-    available = ports.dup
-    available.delete(start)
+    next unless start.any? { |s| s == 0 }
+
+    available = Set.new(ports.dup) - [start]
     bridges += build([start], start.max, available)
   end
 
   bridges.each do |b|
-    show b
+    show b if $debug
   end
-  bridges
+
+  block_given? ? yield(bridges) : bridges
 end
 
 def build(bridge, value, ports)
@@ -30,8 +31,7 @@ def build(bridge, value, ports)
     end
     next unless first || second
 
-    available = ports.dup
-    available.delete candidate
+    available = ports - [candidate]
     nextval = first ? candidate[1] : candidate[0]
     built += build(bridge + [candidate], nextval, available)
   end
@@ -44,18 +44,30 @@ def max_score(bridges)
     bridge.map(&:sum).sum
   end
 
-  bridges.zip(scores).sort_by(&:last).last
+  bridges.zip(scores).max_by(&:last)
 end
 
 def max_len(bridges)
-  sorted = bridges.zip(bridges.map(&:length)).sort_by(&:last)
-  sorted.select { |b, l| l == sorted.last.last }
+  len = bridges.sort_by(&:length).last.length
+  best = bridges.select { |b| b.length == len }.sort_by { |b| b.map(&:sum).sum }.last
+  [best, best.map(&:sum).sum]
 end
 
 def show(bridge)
-  bridge.map { |bi| bi.map(&:to_s).join("/") }.join("--")
+  puts bridge.map { |bi| bi.map(&:to_s).join("/") }.join("--")
 end
 
+def part1(bridges)
+  bridge, score = *max_score(bridges)
+  show bridge
+  score
+end
+
+def part2(bridges)
+  bridge, score = *max_len(bridges)
+  show bridge
+  score
+end
 
 example = <<-EX
 0/2
@@ -68,29 +80,17 @@ example = <<-EX
 9/10
 EX
 
-# part 1
-# with(:bridges) { |bs| b, s = *max_score(bs); puts "max is #{show(b)}"; s }
-# try example, 31
-# try puzzle_input
-
-generated = bridges(puzzle_input)
-# generated = bridges(example)
-
 part 1
-strongest, score = *max_score(generated)
-puts "strongest is #{show(strongest)} with score #{score}"
+with :part1
+debug!
+example_bridges = bridges(example)
+try example_bridges, 31
+no_debug!
+puts "generating bridges for puzzle input"
+puzzle_input_bridges = bridges(puzzle_input)
+try puzzle_input_bridges
 
 part 2
-longest = max_len(generated)
-puts "longest bridges:"
-longest.each do |b, s|
-  puts "#{show(b)}: #{s}"
-end
-strongest, score = *max_score(longest.map(&:first))
-puts "strongest is #{show(strongest)} with score #{score}"
-
-
-# part 2
-# with(:solution)
-# try example, 0
-# try puzzle_input
+with(:part2)
+try example_bridges, 19
+try puzzle_input_bridges
