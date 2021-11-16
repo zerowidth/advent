@@ -47,7 +47,7 @@ def solution(input)
     nearest << particles.index(p)
   end
 
-  nearest
+  nearest.last
 end
 
 example = <<-EX
@@ -82,8 +82,7 @@ def collisions(input)
     end
   end
 
-  remaining
-
+  remaining.last
 end
 
 example = <<-EX
