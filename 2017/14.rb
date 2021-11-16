@@ -10,7 +10,7 @@ def knot_hash_binary(input)
     lengths.each do |len|
       list = list.rotate(pos)
       reversed = list[0...len].reverse
-      0.upto(len-1) { |i| list[i] = reversed[i] }
+      0.upto(len - 1) { |i| list[i] = reversed[i] }
       list = list.rotate(-pos)
       pos = ((pos + len) + skip) % 256
       skip += 1
@@ -22,7 +22,7 @@ def knot_hash_binary(input)
 end
 
 def bits(input)
-  bits = 0.upto(127).map do |n|
+  0.upto(127).with_progress(total: 128).map do |n|
     knot_hash_binary("#{input}-#{n}")
   end
 end
@@ -36,7 +36,7 @@ def count_islands(bits, debug: false)
   w = bits.first.size
   bits.each.with_index do |row, y|
     row.each.with_index do |bit, x|
-      land << (x + y*w) if bit == 1
+      land << (x + y * w) if bit == 1
     end
   end
 
@@ -44,14 +44,14 @@ def count_islands(bits, debug: false)
 
   regions = {}
   count = 0
-  while !land.empty?
+  until land.empty?
     region = Set.new [land.first]
     q = [land.first]
-    while !q.empty?
+    until q.empty?
       p = q.shift
       land.delete p
       neighbors(p, w).each do |n|
-      # [p-1, p+1, p-w, p+w].each do |n|
+        # [p-1, p+1, p-w, p+w].each do |n|
         if land.include?(n) && !region.include?(n)
           q << n
           region << n
@@ -63,7 +63,7 @@ def count_islands(bits, debug: false)
     display(land, w, region) if debug
   end
 
-  count
+  regions.size
 end
 
 def neighbors(p, w)
@@ -75,39 +75,34 @@ def neighbors(p, w)
   ns
 end
 
+# ░▒▓
 def display(land, size, region = nil)
   puts "-" * size
-  0.upto(size-1) do |y|
-    0.upto(size-1) do |x|
-      if region && region.include?(x + y*size)
-        print "#{TERM_RED}##{TERM_RESET}"
-      elsif land.include?(x + y*size)
-        print "*"
+  0.upto(size - 1) do |y|
+    0.upto(size - 1) do |x|
+      if region&.include?(x + y * size)
+        print "▓▓".red
+      elsif land.include?(x + y * size)
+        print "▓▓"
       else
-        print "."
+        print "░░"
       end
     end
     puts
   end
 end
 
-
-# example = <<-EX
-# EX
-
 part 1
 with(:solution)
-puts bits("flqrgnkx")[0..7].map { |s| s[0..7].join("") }.join("\n")
+example_bits = bits("flqrgnkx")
+puts example_bits[0..7].map { |s| s[0..7].join }.join("\n")
 try puzzle_input
 
 part 2
 with(:count_islands, debug: true)
-example = bits("flqrgnkx")[0..15].map { |s| s[0..15] }
-try example, 13
+example = example_bits[0..7].map { |s| s[0..7] }
+try example, 12
 
 with(:count_islands)
-example = bits("flqrgnkx")
-try example, 1242
-
+try example_bits, 1242
 try bits(puzzle_input)
-puts "\n--- done ---"
