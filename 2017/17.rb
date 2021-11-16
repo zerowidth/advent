@@ -3,12 +3,11 @@ require_relative "../toolkit"
 def spinlock(steps, rounds)
   buf = [0]
   pos = 0
-  1.upto(rounds) do |n|
+  rounds.times_with_progress do |n|
     pos = (pos + steps) % buf.length
-    buf.insert pos + 1, n
+    buf.insert pos + 1, n + 1
     pos = pos + 1
     # puts buf.inspect
-    print "\r#{n} " if n % 100 == 0
   end
   if block_given?
     yield buf
@@ -21,14 +20,13 @@ def after_zero(steps, rounds)
   len = 1
   pos = 0
   after = nil
-  1.upto(rounds) do |n|
+  rounds.times_with_progress do |n|
     pos = (pos + steps) % len
     if pos == 0
-      after = n
+      after = n + 1
     end
     len += 1
     pos += 1
-    print "\r#{n} " if n % 10_000 == 0
   end
   after
 end
