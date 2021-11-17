@@ -169,6 +169,16 @@ class String
   def number_table
     lines.map(&:numbers).reject(&:empty?)
   end
+
+  def indices(search)
+    position = 0
+    Enumerator.new do |yielder|
+      while (pos = index(search, position))
+        yielder << pos
+        position = pos + 1
+      end
+    end
+  end
 end
 
 module Enumerable
