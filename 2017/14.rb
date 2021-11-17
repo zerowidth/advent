@@ -75,7 +75,6 @@ def neighbors(p, w)
   ns
 end
 
-# ░▒▓
 def display(land, size, region = nil)
   puts "-" * size
   0.upto(size - 1) do |y|

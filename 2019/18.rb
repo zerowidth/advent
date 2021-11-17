@@ -1,11 +1,13 @@
 require_relative "../toolkit"
 require_relative "./simple_grid"
 
+WALL = Grid::BLOCKS[:full]
+
 def read(map)
   grid = SimpleGrid.new
   map.split("\n").each.with_index do |line, y|
     line.each_char.with_index do |char, x|
-      grid.set x, y, char
+      grid.set x, y, char == "#" ? WALL : char
     end
   end
   grid
@@ -25,7 +27,7 @@ end
 def part1_optimized(input)
   grid = read input
   keys_to_collect = Set.new grid.select { |x, y, v| v =~ /[a-z]/ }.map(&:last)
-  not_a_wall = ->(p) { v = grid.at(p[0], p[1]); v && v != "#" }
+  not_a_wall = ->(p) { v = grid.at(p[0], p[1]); v && v != WALL }
 
   puts "calculating node costs..."
   costs = {}
@@ -137,10 +139,10 @@ def part2(input)
   end
 
   if center
-    grid.set(center[0], center[1], "#")
+    grid.set(center[0], center[1], WALL)
     grid.adjacent_points(center[0], center[1]).each do |x, y|
       if x == center[0] || y == center[1]
-        grid.set(x, y, "#")
+        grid.set(x, y, WALL)
       else
         grid.set(x, y, "@")
       end
@@ -153,7 +155,7 @@ def part2(input)
   puts grid.to_s(pad: 0)
 
   keys_to_collect = Set.new grid.select { |x, y, v| v =~ /[a-z]/ }.map(&:last)
-  not_a_wall = ->(p) { v = grid.at(p[0], p[1]); v && v != "#" }
+  not_a_wall = ->(p) { v = grid.at(p[0], p[1]); v && v != WALL }
 
   puts "calculating node costs..."
   costs = {}

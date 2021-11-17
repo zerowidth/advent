@@ -163,4 +163,3 @@ class SimpleGrid
     s
   end
 end
-

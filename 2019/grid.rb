@@ -45,6 +45,12 @@ class Vec
 end
 
 class Grid
+  BLOCKS = {
+    light: "░",
+    medium: "▒",
+    dark: "▓",
+    full: "█"
+  }
   attr_reader :points
 
   def self.parse(input)
