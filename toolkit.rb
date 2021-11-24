@@ -10,6 +10,11 @@ require "set"
 Diffy::Diff.default_format = :color
 
 $debug = false
+
+def debug?
+  $debug
+end
+
 def debug!
   $debug = true
 end
@@ -18,8 +23,20 @@ def no_debug!
   $debug = false
 end
 
+# def with_debug
+#   old = $debug
+#   $debug = true
+#   yield
+# ensure
+#   $debug = old
+# end
+
 def debug(*args)
   puts(*args) if $debug
+end
+
+def dpp(*args)
+  pp(*args) if $debug
 end
 
 def part(n)
@@ -48,7 +65,7 @@ def try(input, *args, expect: :expected, **kwargs)
     # read the source to get the argument name
     file, line = *caller.first.split(":")
     arg = File.readlines(file)[line.to_i - 1].scan(/try (\S+),?/).first&.first
-    arg = arg.sub(/,$/,"") if arg
+    arg = arg.sub(/,$/, "") if arg
     arg ||= args.first.inspect
   end
   puts
@@ -97,7 +114,7 @@ end
 def diff(expected, value)
   ex = expected.nil? ? "nil" : expected.to_s
   val = value.nil? ? "nil" : value.to_s
-    puts Diffy::Diff.new(ex + "\n", val + "\n")
+  puts Diffy::Diff.new(ex + "\n", val + "\n")
 end
 
 # for input checking in the very generic `try` helper
