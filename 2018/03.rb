@@ -2,13 +2,13 @@ require_relative "../toolkit"
 
 def overlapping(input)
   claims = input.split("\n").map do |line|
-    line.scan(/(\d+)/).flatten.drop(1).map(&:to_i)
+    line.scan(/\d+/).drop(1).map(&:to_i)
   end
   fabric = Hash.new(0)
-  claims.each do |sx,sy,w,h|
-    (sx...sx+w).each do |x|
-      (sy...sy+h).each do |y|
-        fabric[[x,y]] += 1
+  claims.each do |sx, sy, w, h|
+    (sx...sx + w).each do |x|
+      (sy...sy + h).each do |y|
+        fabric[[x, y]] += 1
       end
     end
   end
@@ -21,40 +21,67 @@ ex1 = <<-EX
 #3 @ 5,5: 2x2
 EX
 
-def unique_claim(input)
-  claims = input.split("\n").map do |line|
-    line.scan(/(\d+)/).flatten.map(&:to_i)
-  end
-
-  claims.reject do |a|
-    STDERR.puts "checking #{a}"
-    claims.any? do |b|
-      next if a == b
-      ox = overlaps?([a[1], a[1]+a[3]-1], [b[1], b[1]+b[3]-1])
-      oy = overlaps?([a[2], a[2]+a[4]-1], [b[2], b[2]+b[4]-1])
-      STDERR.puts "  against #{b}: #{ox} #{oy}"
-      ox || oy
-    end
-  end
+# start at a, width aw, start b, width bw
+def overlap?(a, aw, b, bw)
+  a2 = a + aw
+  b2 = b + bw
+  # b starts inside a || a starts inside b || a and b start at the same pos
+  (b > a && b < a2) || (a > b && a < b2) || (a == b)
 end
 
-def overlaps?(a, b)
-  # false only if:
-  # a is to the left of b
-  # a is to the right of b
-  a, b = b, a if a[0] > b[0]
-  x = (a[0] < b[0] && a[1] >= b[0]) || a[0] < b[1]
-  STDERR.puts "    #{a} vs #{b}: #{x}"
-  x
+def unique_claim(input)
+  claims = input.split("\n").map do |line|
+    line.scan(/\d+/).map(&:to_i)
+  end
+  dpp claims
+
+  alone = claims.reject do |claim|
+    cid, cx, cy, cw, ch = *claim
+    debug "checking #{claim}"
+    claims.any? do |candidate|
+      id, x, y, w, h = *candidate
+      next if cid == id
+
+      if overlap?(cx, cw, x, w) && overlap?(cy, ch, y, h)
+        debug "  #{candidate} overlaps"
+        true
+      else
+        debug "  #{candidate} no overlap"
+      end
+    end
+  end
+
+  puts "alone: #{alone}"
+  alone = alone.first if alone.any?
+  # fabric_claims = Hash.of_array
+  # claims.each.with_progress(total: claims.length) do |claim|
+  #   id, sx, sy, w, h = *claim
+  #   (sx...sx + w).each do |x|
+  #     (sy...sy + h).each do |y|
+  #       fabric_claims[[x, y]] << id
+  #     end
+  #   end
+  # end
+
+  # # now, find all claims which don't overlap
+  # separate = Set.new(claims.map(&:first))
+  # fabric_claims.values.each.with_progress(total: fabric_claims.length) do |vs|
+  #   separate = separate.difference(vs) if vs.length > 1
+  # end
+  # separate.first
+  alone&.at(0)
 end
 
 part 1
+debug!
 with :overlapping
-try ex1, 4
+try ex1, expect: 4
+no_debug!
 try puzzle_input
 
 part 2
 with :unique_claim
-try ex1, 3
-# try ex2, nil
-# try puzzle_input
+debug!
+try ex1, expect: 3
+no_debug!
+try puzzle_input
