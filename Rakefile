@@ -2,6 +2,7 @@ require "bundler"
 Bundler.setup
 require "colorize"
 
+require "net/http"
 require "pathname"
 require "pty"
 
@@ -112,13 +113,31 @@ end
 desc "Create the next one"
 task :next do
   files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
-  src = root / "template.rb"
+  template = root / "template.rb"
   last = (files.last || "00").succ
   dest = root / year / "#{last}.rb"
   input = root / year / "#{last}.txt"
-  FileUtils.cp src, dest
+
+  unless ENV["ADVENT_SESSION"]
+    puts "ADVENT_SESSION not set!"
+    exit 1
+  end
+
+  uri = URI("https://adventofcode.com/#{year}/day/#{last}/input")
+  req = Net::HTTP::Get.new(uri)
+  req["Cookie"] = "session=#{ENV["ADVENT_SESSION"]}"
+  res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+
+  unless res.code == "200"
+    puts "input fetch failed!"
+    puts res.inspect
+    exit 1
+  end
+
+  FileUtils.cp template, dest
   puts "created #{dest}"
-  `pbpaste > #{input}`
+  File.open(input, "w") { |f| f.write res.body }
   puts "created #{input}"
   `code #{dest}`
+  `code #{input}`
 end
