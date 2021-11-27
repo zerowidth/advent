@@ -232,6 +232,8 @@ module Enumerable
   end
 
   def with_progress(title: nil, total: nil, length: false)
+    return self if debug?
+
     total = self.length if length
     progress_bar(title: title, total: total).iterate(self)
   end
@@ -240,13 +242,12 @@ end
 # construct a default progress bar to use everywhere
 def progress_bar(title: nil, total: nil)
   title = title ? "#{title}: " : ""
-  bar = eta = ""
 
   if total
-    bar = " [:bar]"
-    eta = " :eta"
+    name = "#{title}:elapsed :eta :current/:total :rate/sec [:bar]"
+  else
+    name = "#{title}:elapsed :current :rate/sec"
   end
 
-  name = "#{title}:elapsed#{eta} :current :rate/sec#{bar}"
   TTY::ProgressBar.new(name, frequency: 10, total: total, bar_format: :dot)
 end
