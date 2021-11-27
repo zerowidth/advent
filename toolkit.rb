@@ -231,10 +231,9 @@ module Enumerable
     end
   end
 
-  def with_progress(title: nil, total: nil, length: false)
-    return self if debug?
+  def with_progress(title: nil, total: nil, &block)
+    return each(&block) if debug?
 
-    total = self.length if length
     progress_bar(title: title, total: total).iterate(self)
   end
 end
