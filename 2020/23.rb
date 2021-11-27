@@ -36,7 +36,7 @@ end
 def part2(input, moves:, total: nil)
   input = input.chomp.chars.map(&:to_i)
 
-  cups = {} # hash { a => b }: cup a comes after b
+  cups = Array.new((total || input.length) + 1)
   input.each.with_index do |cup, i|
     cups[cup] = input[i + 1] if i < input.length
   end
@@ -53,17 +53,13 @@ def part2(input, moves:, total: nil)
     cups[input.last] = input.first
   end
 
-  max = cups.keys.max
+  max = total || input.length
   current = input.first
   debug cups
 
   moves.times_with_progress do |move|
     debug "-- move #{move} --" if $debug
-    if $debug
-      array = [current]
-      array << cups[array.last] while cups[array.last] != current
-      debug "cups: #{cups} #{array}"
-    end
+    debug "cups: #{cups.drop(1)}" if $debug
 
     # take the next three
     taken = [cups[current], cups[cups[current]], cups[cups[cups[current]]]]
