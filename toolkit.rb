@@ -200,6 +200,12 @@ class String
   end
 end
 
+class Hash
+  def self.of_array
+    new { |h, k| h[k] = [] }
+  end
+end
+
 module Enumerable
   def map_with(method)
     map { |item| send(method, item) }
