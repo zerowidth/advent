@@ -162,7 +162,9 @@ class Integer
   end
 
   # more efficient than shoving .times.each through an enumerator
-  def times_with_progress(title: nil)
+  def times_with_progress(title: nil, &block)
+    return times(&block) if debug?
+
     bar = progress_bar(title: title, total: self)
     increment = [self / 10_000, 1].max # only increment this many times
     times do |n|
@@ -170,7 +172,7 @@ class Integer
       bar.advance(increment) if n % increment == 0
     end
   ensure
-    bar.finish
+    bar.finish if bar
   end
 end
 
