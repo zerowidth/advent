@@ -123,7 +123,7 @@ task :next do
     exit 1
   end
 
-  uri = URI("https://adventofcode.com/#{year}/day/#{last}/input")
+  uri = URI("https://adventofcode.com/#{year}/day/#{last.to_i}/input")
   req = Net::HTTP::Get.new(uri)
   req["Cookie"] = "session=#{ENV["ADVENT_SESSION"]}"
   res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
