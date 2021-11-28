@@ -1,6 +1,6 @@
 require_relative "../toolkit"
 
-def part1(input)
+def parse_log(input)
   sleep_times = Hash.of_array
   guard = nil
   slept = nil
@@ -24,10 +24,26 @@ def part1(input)
 
   debug "sleep_times #{sleep_times}"
 
+  sleep_times
+end
+
+def part1(input)
+  sleep_times = parse_log(input)
 
   # Strategy 1: Find the guard that has the most minutes asleep. What minute
   # does that guard spend asleep the most?
   sleepiest = sleep_times.max_by { |guard, times| times.length }
+  guard = sleepiest[0]
+  minute = sleepiest[1].tally.max_by(&:last).first
+  debug "guard #{guard} was sleepiest on minute #{minute}"
+  guard * minute
+end
+
+def part2(input)
+  sleep_times = parse_log(input)
+
+  # Strategy 2: Of all guards, which guard is most frequently asleep on the same minute?
+  sleepiest = sleep_times.max_by { |_guard, times| times.tally.max_by(&:last).last }
   guard = sleepiest[0]
   minute = sleepiest[1].tally.max_by(&:last).first
   debug "guard #{guard} was sleepiest on minute #{minute}"
@@ -61,9 +77,9 @@ try ex1, expect: 240
 no_debug!
 try puzzle_input
 
-# part 2
-# with :part2
-# debug!
-# try ex1, expect: nil
-# no_debug!
-# try puzzle_input
+part 2
+with :part2
+debug!
+try ex1, expect: 4455
+no_debug!
+try puzzle_input
