@@ -1,20 +1,25 @@
 require_relative "../toolkit"
 
-def react(polymer)
-  letters = polymer.downcase.chars.uniq
-  pattern = letters.sort.map { |l| "#{l}#{l.upcase}|#{l.upcase}#{l}" }.join("|")
-  pattern = Regexp.new(pattern)
+def react(polymer, title: nil)
+  polymer = polymer.chars.to_a
 
-  bar = progress_bar unless debug?
-  while polymer.gsub!(pattern, "")
+  bar = progress_bar(title: title) unless debug?
+  stack = []
+  until polymer.empty?
+    char = polymer.shift
+    prev_char = stack.last
+    if char != prev_char && (char.upcase == prev_char || char.downcase == prev_char)
+      debug "  removing #{prev_char}#{char}"
+      stack.pop
+    else
+      stack << char
+    end
     bar.advance unless debug?
-    # noop
   end
   bar.finish unless debug?
 
-  polymer
+  stack
 end
-
 
 def part1(input)
   polymer = input.chomp
@@ -27,10 +32,11 @@ def part2(input)
 
   by_unit = {}
   units.each do |unit|
-    pattern = Regexp.new("#{unit}|#{unit.upcase}")
-    length = react(polymer.gsub(pattern, "")).length
+    unit = "#{unit}|#{unit.upcase}"
+    pattern = Regexp.new(unit)
+    length = react(polymer.gsub(pattern, ""), title: "unit #{unit}").length
     by_unit[unit] = length
-    debug "unit #{pattern}: #{length}"
+    debug "unit #{unit}: #{length}"
   end
 
   by_unit.min_by(&:last).last
