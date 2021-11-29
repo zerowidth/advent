@@ -1,33 +1,81 @@
 require_relative "../toolkit"
 
-def part1(input)
-  players, last_marble = input.scan(/\d+/).map(&:to_i)
+# doubly linked list
+class Marble
+  attr_reader :value
+  attr_accessor :next_marble, :prev_marble
 
+  def initialize(value)
+    @value = value
+    @next_marble = nil
+    @prev_marble = nil
+  end
+
+  def insert_after(marble)
+    marble.next_marble = next_marble
+    marble.prev_marble = self
+    next_marble.prev_marble = marble
+    @next_marble = marble
+  end
+
+  def delete
+    prev_marble.next_marble = next_marble
+    next_marble.prev_marble = prev_marble
+    value
+  end
+
+  def clockwise(num)
+    current = self
+    num.times do
+      current = current.next_marble
+    end
+    current
+  end
+
+  def counterclockwise(num)
+    current = self
+    num.times do
+      current = current.prev_marble
+    end
+    current
+  end
+end
+
+def high_score(players, last_marble)
   scores = Hash.new(0)
-  marbles = [0]
-  player = 1 # 1-indexed for debugging
-  current_marble = 0 # value of marble, not index!
+
+  player = 1
+  zero = Marble.new(0)
+  zero.next_marble = zero
+  zero.prev_marble = zero
+  current = zero
 
   bar = progress_bar(total: last_marble - 1) unless debug?
   1.upto(last_marble) do |marble|
     if marble % 23 == 0
       # add this marble's score:
       scores[player] += marble
-      # take 7 marbles counterclockwise:
-      i = (marbles.index(current_marble) - 7) % marbles.length
-      # and current is the one just clockwise from it
-      current_marble = marbles[(i + 1) % marbles.length]
-      removed = marbles.delete_at(i)
+      # remove the marble 7 counterclockwise, and set the next one to current
+      current = current.counterclockwise(6)
+      removed = current.counterclockwise(1).delete
       scores[player] += removed
     else
       # place the marble after one space clockwise
-      i = (marbles.index(current_marble) + 1) % marbles.length
-      marbles.insert i + 1, marble
-      current_marble = marble
+      marble = Marble.new(marble)
+      current.clockwise(1).insert_after(marble)
+      current = marble
     end
 
-    ms = marbles.map { |m| m == current_marble ? m.to_s.green : m.inspect }.join(" ")
-    debug "[#{player}] #{ms}"
+    if debug?
+      ms = []
+      cm = zero
+      loop do
+        ms << (cm == current ? cm.value.to_s.green : cm.value.to_s)
+        cm = cm.next_marble
+        break if cm == zero
+      end
+      debug "[#{player}] #{ms.join(" ")}"
+    end
 
     player = (player % players) + 1
     bar.advance unless debug?
@@ -38,9 +86,15 @@ def part1(input)
   scores.values.max
 end
 
-# def part2(input)
+def part1(input)
+  players, last_marble = input.scan(/\d+/).map(&:to_i)
+  high_score players, last_marble
+end
 
-# end
+def part2(input)
+  players, last_marble = input.scan(/\d+/).map(&:to_i)
+  high_score players, last_marble * 100
+end
 
 ex1 = <<-EX
 9 players; last marble is worth 25 points
@@ -65,7 +119,4 @@ try puzzle_input
 
 part 2
 with :part2
-debug!
-try ex1, expect: nil
-no_debug!
 try puzzle_input
