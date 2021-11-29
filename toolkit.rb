@@ -201,12 +201,16 @@ class String
 end
 
 class Hash
+  def self.of
+    new { |h, k| h[k] = yield }
+  end
+
   def self.of_array
-    new { |h, k| h[k] = [] }
+    of { [] }
   end
 
   def self.of_set
-    new { |h, k| h[k] = Set.new }
+    of { Set.new }
   end
 end
 

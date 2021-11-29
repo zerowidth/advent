@@ -47,13 +47,37 @@ def part2(input)
     power_level x, y, serial
   end
 
-  by_size = {}
-  1.upto(300).with_progress.each do |size|
-    totals = powers_by_size(grid, size)
-    by_size[size] = totals.max_by(&:last)
+  # hash of: y => {length => [values]}
+  rows = Hash.of { Hash.of { [] } }
+  bar = progress_bar(title: "rows", total: 300)
+  0.upto(299).each do |y|
+    row = 0.upto(299).map { |x| grid[x + y * 300] }
+    rows[y][1] = row
+    2.upto(300) do |length|
+      rows[y][length] = row.each_cons(length).map(&:sum)
+    end
+    bar.advance
   end
+  bar.finish
+  by_corner = {} # [x, y, length] => sum
 
-  by_size
+  bar = progress_bar(total: 300, title: "areas")
+  1.upto(300) do |size|
+    0.upto(300 - size) do |y|
+      0.upto(300 - size) do |x|
+        value = 0.upto(size - 1).map do |row|
+          rows.fetch(y + row).fetch(size)[x]
+        end.sum
+        by_corner[[x, y, size]] = value
+      end
+    end
+    bar.advance
+  end
+  bar.finish
+
+  best = by_corner.max_by(&:last)
+  puts "best: #{best}"
+  best.first.map(&:to_s).join(",")
 end
 
 ex1 = <<-EX
@@ -69,7 +93,7 @@ try puzzle_input
 
 part 2
 with :part2
-# debug!
+debug!
 try ex1, expect: "90,269,16"
 no_debug!
 try puzzle_input
