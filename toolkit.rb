@@ -204,6 +204,10 @@ class Hash
   def self.of_array
     new { |h, k| h[k] = [] }
   end
+
+  def self.of_set
+    new { |h, k| h[k] = Set.new }
+  end
 end
 
 module Enumerable
