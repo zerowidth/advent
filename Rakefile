@@ -115,7 +115,7 @@ task :next do
   files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
   template = root / "template.rb"
   last = (files.last || "00").succ
-  dest = root / year / "#{last}.rb"
+  script = root / year / "#{last}.rb"
   input = root / year / "#{last}.txt"
 
   unless ENV["ADVENT_SESSION"]
@@ -134,10 +134,12 @@ task :next do
     exit 1
   end
 
-  FileUtils.cp template, dest
-  puts "created #{dest}"
+  FileUtils.cp template, script
+  puts "created #{script}"
   File.open(input, "w") { |f| f.write res.body }
   puts "created #{input}"
-  `code #{dest}`
-  `code #{input}`
+  sh "git add -N #{script}"
+  sh "git add #{input}"
+  sh "code #{input}"
+  sh "code #{script}"
 end
