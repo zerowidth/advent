@@ -24,7 +24,7 @@ end
 
 def files_for_year
   FileUtils.mkdir_p(root / year)
-  (root / year).children.select { |f| f.basename.to_s =~ /\d{2}.rb/ }
+  (root / year).children.select { |f| f.basename.to_s =~ /\d{2}\.rb/ }
 end
 
 def day_file
@@ -107,6 +107,17 @@ task :all do
   files_for_year.sort.each do |file|
     puts "-" * 80
     sh "ruby", file.to_s
+  end
+end
+
+desc "Run everything"
+task :everything do
+  root.glob("2???").sort.each do |year|
+    files = year.children.select { |f| f.basename.to_s =~ /\d{2}\.rb/ }
+    files.sort.each do |file|
+      puts "-" * 80
+      sh "ruby", file.to_s
+    end
   end
 end
 

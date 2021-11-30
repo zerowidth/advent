@@ -1,4 +1,5 @@
 require_relative "../toolkit"
+require_relative "./grid"
 require_relative "./simple_grid"
 
 WALL = Grid::BLOCKS[:full]
