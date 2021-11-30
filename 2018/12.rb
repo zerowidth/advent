@@ -61,6 +61,6 @@ try ex1, expect: 325
 no_debug!
 try puzzle_input
 
-# part 2
-# with :part1, generations: 50_000_000_000
-# try puzzle_input
+part 2
+with :part1, generations: 50_000_000_000
+try puzzle_input
