@@ -185,6 +185,10 @@ class String
     scan(/\d+/).map(&:to_i)
   end
 
+  def number
+    numbers.first
+  end
+
   def number_table
     lines.map(&:numbers).reject(&:empty?)
   end

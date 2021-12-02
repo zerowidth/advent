@@ -3,7 +3,7 @@ require_relative "../toolkit"
 def part1(input)
   pos = depth = 0
   input.lines.each do |line|
-    num = line.numbers.first
+    num = line.number
     case line
     when /forward/
       pos += num
@@ -13,15 +13,14 @@ def part1(input)
       depth += num
     end
   end
-  input
 
   depth * pos
 end
 
 def part2(input)
-  pos = depth = aim =0
+  pos = depth = aim = 0
   input.lines.each do |line|
-    num = line.numbers.first
+    num = line.number
     case line
     when /forward/
       pos += num
@@ -32,7 +31,6 @@ def part2(input)
       aim += num
     end
   end
-  input
 
   depth * pos
 end

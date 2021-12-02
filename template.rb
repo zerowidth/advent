@@ -1,24 +1,25 @@
 require_relative "../toolkit"
 
 def part1(input)
-  input.each_line.map(&:strip).map do |line|
-  end
+  input.lines
+  nil
 end
 
-ex1 = <<-EX
-
-EX
+def part2(input)
+  input.lines
+  nil
+end
 
 part 1
 with :part1
 debug!
-try ex1, expect: nil
+# try ex1, expect: nil
 no_debug!
 try puzzle_input
 
-# part 2
-# with :part2
-# debug!
+part 2
+with :part2
+debug!
 # try ex1, expect: nil
-# no_debug!
-# try puzzle_input
+no_debug!
+try puzzle_input
