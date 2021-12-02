@@ -98,8 +98,20 @@ def try(input, *args, expect: :expected, **kwargs)
   elapsed = Time.now - start
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
-  if expect == :expected # explicitly not set, this is newly calculated
-    puts "=> #{value.inspect.colorize(:magenta)}"
+  if expect == :expected # this is the puzzle input
+    print "=> #{value.inspect.colorize(:magenta)}"
+
+    # if this looks like valid output, put it on the clipboard
+    stringish = value.is_a?(String) && !value.include?("\n") && value.length < 80
+    number = value.is_a?(Integer) && !value.zero?
+    # env var to prevent clipboard spam when running multiple days in a row
+    if ENV["ONEOFF"] && (stringish || number)
+      IO.popen("pbcopy", "w") { |io| io.write value.to_s }
+      puts " (copied)"
+    else
+      puts
+    end
+
     puts
   elsif value == expect
     puts "=> #{value.inspect.colorize(:green)}"

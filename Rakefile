@@ -94,7 +94,7 @@ task :watch do
     end
 
     running = true
-    sh "ruby #{last}" do |ok, res|
+    sh "ONEOFF=true ruby #{last}" do |ok, res|
       warn res.to_s.colorize(:red) unless ok
       puts
     end
