@@ -1,10 +1,5 @@
 require_relative "../toolkit"
 
-def part1(input)
-  input.each_line.map(&:strip).map do |line|
-  end
-end
-
 def transform(subject_number, loop_size)
   value = 1
   loop_size.times do
