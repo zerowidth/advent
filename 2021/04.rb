@@ -1,59 +1,47 @@
 require_relative "../toolkit"
 
 class Board
-
   attr_reader :rows, :marked
 
   def initialize(input)
     @rows = input.lines_of(:numbers)
-    @marked = {}
+    @marked = Set.new
+  end
+
+  def lines
+    @lines ||= (rows + rows.first.zip(*rows.drop(1))).map(&:to_set)
   end
 
   def mark(num)
-    rows.each.with_index do |nums, row|
-      if (col = nums.index(num))
-        marked[[row, col]] = true
-      end
-    end
+    marked << num
   end
 
   def bingo?
-    size = rows.first.length
-    # any row entirely marked
-    return true if marked.keys.tally_by(&:first).any? { |row, count| count == size }
-
-    # any column
-    return true if marked.keys.tally_by(&:last).any? { |row, count| count == size }
-
-    false
+    lines.any? { |line| line.subset? marked }
   end
 
   def score
     # sum of unmarked numbers
-    rows.flat_map.with_index do |nums, row|
-      nums.reject.with_index do |_num, col|
-        marked[[row, col]]
+    rows.flat_map do |row|
+      row.reject do |num|
+        marked.include?(num)
       end
     end.sum
   end
 
-  def to_s
-    rows.map.with_index do |nums, row|
-      nums.map.with_index do |num, col|
-        num = num.to_s.rjust(2)
-        num = num.colorize(:red) if @marked[[row, col]]
-        num
+  def draw
+    str = rows.map do |row|
+      row.map do |num|
+        s = num.to_s.rjust(2)
+        s = s.colorize(:red) if marked.include?(num)
+        s
       end.join(" ")
     end.join("\n")
+    debug str
+    debug "---"
   end
 end
 
-
-
-def draw(board)
-  debug "---"
-  debug board.to_s
-end
 
 def part1(input)
   numbers = input.sections.first.numbers
@@ -64,13 +52,12 @@ def part1(input)
   winner = numbers.detect do |drawn|
     debug "drew #{drawn}"
     boards.each { |b| b.mark drawn }
-    # boards.map_with(:draw)
-
     boards.any?(&:bingo?)
   end
 
+  debug "BINGO!"
   board = boards.detect(&:bingo?)
-  draw(board)
+  board.draw
   board.score * winner
 end
 
@@ -80,22 +67,22 @@ def part2(input)
     Board.new(board)
   end
 
-  debug "boards: #{boards}"
-
   while (drawn = numbers.shift)
     debug "drew #{drawn}"
     boards.each { |b| b.mark drawn }
+
     winners = boards.select(&:bingo?)
     if winners.any?
       debug "removing #{winners.length} boards, #{boards.length - winners.length} remain"
       boards -= winners
     end
+
     break if boards.length == 1
   end
 
   board = boards.first
   debug "last board, drew #{drawn}"
-  draw board
+  board.draw
 
   until board.bingo? || numbers.empty?
     drawn = numbers.shift
