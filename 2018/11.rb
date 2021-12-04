@@ -94,7 +94,7 @@ def part2(input)
   sat = SummedAreaTable.new(grid, 300, 300)
 
   bar = progress_bar(total: 300, title: "searching for best area")
-  max = 1.upto(300).map do |size|
+  by_size = 1.upto(300).lazy.map do |size|
     best = 0.upto(300 - size).flat_map do |y|
       0.upto(300 - size).map do |x|
         [x, y, size, sat.sum(x, y, size, size)]
@@ -102,7 +102,10 @@ def part2(input)
     end.max_by(&:last)
     bar.advance
     best
-  end.max_by(&:last)
+  end
+  max = by_size.each_cons(2) do |a, b|
+    break a if b.last < a.last
+  end
   bar.finish
 
   max.first(3).map(&:to_s).join(",")
