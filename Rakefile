@@ -105,8 +105,9 @@ end
 desc "Run all puzzles for the given or current year. Specify `year=2017` to set the year."
 task :all do
   files_for_year.sort.each do |file|
-    puts "-" * 80
-    sh "ruby", file.to_s
+    cmd = "ruby #{file}"
+    puts "=" * cmd.length
+    sh cmd
   end
 end
 
@@ -115,8 +116,9 @@ task :everything do
   root.glob("2???").sort.each do |year|
     files = year.children.select { |f| f.basename.to_s =~ /\d{2}\.rb/ }
     files.sort.each do |file|
-      puts "-" * 80
-      sh "ruby", file.to_s
+      cmd = "ruby #{file}"
+      puts "=" * cmd.length
+      sh cmd
     end
   end
 end

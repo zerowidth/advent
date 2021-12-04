@@ -72,6 +72,11 @@ def try(input, *args, expect: :expected, **kwargs)
   puts "try #{arg.colorize(:yellow)}"
   puts "-" * (4 + arg.length)
 
+  if input.is_a?(PuzzleInput) && ENV["SKIP_INPUT"]
+    puts "(skipping)"
+    return
+  end
+
   # maintain parity with "older" API, before kwargs, to differentiate a normal
   # try(example, expected, arg, arg) from try(input, arg, arg, expected: ...)
   if expect == :expected && args.length.positive?
