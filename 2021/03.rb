@@ -1,7 +1,7 @@
 require_relative "../toolkit"
 
 def part1(input)
-  input = input.lines(chomp: true).map(&:chars)
+  input = input.lines_of(:chars)
   by_digit = input.shift.zip(*input).map(&:tally)
   debug "counts by digit: #{by_digit}"
   epsilon = by_digit.map { |counts| counts.max_by(&:last).first }.join.to_i(2)
@@ -22,7 +22,7 @@ def filter_lines(lines)
 end
 
 def part2(input)
-  lines = input.lines(chomp: true).map(&:chars)
+  lines = input.lines_of(:chars)
   oxygen = filter_lines(lines) { |c| c["1"] >= c["0"] ? "1" : "0" }
   scrubber = filter_lines(lines) { |c| c["0"] <= c["1"] ? "0" : "1" }
   oxygen * scrubber

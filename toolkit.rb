@@ -62,6 +62,9 @@ def try(input, *args, expect: :expected, **kwargs)
   if input.is_a?(PuzzleInput)
     arg = "puzzle_input"
   else
+    # wrap the input
+    input = Input.new(input) if input.is_a?(String)
+
     # read the source to get the argument name
     file, line = *caller.first.split(":")
     arg = File.readlines(file)[line.to_i - 1].scan(/try (\S+),?/).first&.first
@@ -103,7 +106,8 @@ def try(input, *args, expect: :expected, **kwargs)
   elapsed = Time.now - start
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
-  if expect == :expected # this is the puzzle input
+  case expect
+  when :expected # this is the puzzle input
     print "=> #{value.inspect.colorize(:magenta)}"
 
     # if this looks like valid output, put it on the clipboard
@@ -118,7 +122,7 @@ def try(input, *args, expect: :expected, **kwargs)
     end
 
     puts
-  elsif value == expect
+  when value
     puts "=> #{value.inspect.colorize(:green)}"
   else
     puts "=> #{"mismatch:".colorize(:red)}\n"
@@ -131,11 +135,33 @@ end
 def diff(expected, value)
   ex = expected.nil? ? "nil" : expected.to_s
   val = value.nil? ? "nil" : value.to_s
-  puts Diffy::Diff.new(ex + "\n", val + "\n")
+  puts Diffy::Diff.new("#{ex}\n", "#{val}\n")
+end
+
+class Input < String
+  def initialize(str)
+    super str.chomp
+  end
+
+  def lines
+    super(chomp: true)
+  end
+
+  def each_line(*)
+    super(chomp: true)
+  end
+
+  def sections
+    split("\n\n").map { |s| self.class.new(s) }
+  end
+
+  def lines_of(m)
+    lines.map(&m)
+  end
 end
 
 # for input checking in the very generic `try` helper
-class PuzzleInput < String
+class PuzzleInput < Input
 end
 
 def puzzle_input
@@ -189,7 +215,7 @@ class Integer
       bar.advance(increment) if n % increment == 0
     end
   ensure
-    bar.finish if bar
+    bar&.finish
   end
 end
 
@@ -241,7 +267,7 @@ module Enumerable
   end
 
   def tally_by(&fn)
-    group_by(&fn).to_h { |k, vs| [k, vs.size] }
+    group_by(&fn).transform_values(&:size)
   end
 
   def all_combinations(min_length: 1, max_length: length)
