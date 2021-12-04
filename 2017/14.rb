@@ -21,14 +21,21 @@ def knot_hash_binary(input)
   hashed.pack("C*").unpack("B*")[0].chars.map(&:to_i)
 end
 
+@bits ||= {}
 def bits(input)
-  0.upto(127).with_progress(total: 128).map do |n|
-    knot_hash_binary("#{input}-#{n}")
+  @bits.fetch(input) do
+    0.upto(127).with_progress(total: 128).map do |n|
+      knot_hash_binary("#{input}-#{n}")
+    end
   end
 end
 
-def solution(input)
+def part1(input)
   bits(input).flatten.group_by { |c| c }[1].size
+end
+
+def part2(input)
+  count_islands(bits(input))
 end
 
 def count_islands(bits, debug: false)
@@ -91,17 +98,18 @@ def display(land, size, region = nil)
   end
 end
 
+ex1 = "flqrgnkx"
+
 part 1
-with(:solution)
-example_bits = bits("flqrgnkx")
-puts example_bits[0..7].map { |s| s[0..7].join }.join("\n")
+with(:part1)
 try puzzle_input
 
 part 2
 with(:count_islands, debug: true)
+example_bits = bits(ex1)
 example = example_bits[0..7].map { |s| s[0..7] }
 try example, 12
 
-with(:count_islands)
-try example_bits, 1242
-try bits(puzzle_input)
+with :part2
+try ex1, 1242
+try puzzle_input

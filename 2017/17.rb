@@ -1,6 +1,7 @@
 require_relative "../toolkit"
 
 def spinlock(steps, rounds)
+  steps = steps.to_i
   buf = [0]
   pos = 0
   rounds.times_with_progress do |n|
@@ -17,6 +18,7 @@ def spinlock(steps, rounds)
 end
 
 def after_zero(steps, rounds)
+  steps = steps.to_i
   len = 1
   pos = 0
   after = nil
@@ -31,16 +33,15 @@ def after_zero(steps, rounds)
   after
 end
 
-
 part 1
 with(:spinlock, 9)
 try 3, 5
 with(:spinlock, 2017)
 try 3, 638
-try puzzle_input.to_i
+try puzzle_input
 
 part 2
 with(:after_zero, 9) { |buf| i = buf.index(0); buf[i+1] }
 try 3, 9
 with(:after_zero, 50_000_000) { |buf| i = buf.index(0); buf[i+1] }
-try puzzle_input.to_i
+try puzzle_input

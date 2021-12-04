@@ -1,6 +1,11 @@
 require_relative "../toolkit"
 
-def bridges(input)
+@bridges = {}
+def gen_bridges(input)
+  if (bs = @bridges[input])
+    return block_given? ? yield(bs) : bs
+  end
+
   ports = input.lines.map do |line|
     line.strip.split("/").map(&:to_i)
   end
@@ -17,6 +22,7 @@ def bridges(input)
     show b if $debug
   end
 
+  @bridges[input] = bridges
   block_given? ? yield(bridges) : bridges
 end
 
@@ -57,13 +63,15 @@ def show(bridge)
   puts bridge.map { |bi| bi.map(&:to_s).join("/") }.join("--")
 end
 
-def part1(bridges)
+def part1(input)
+  bridges = gen_bridges(input)
   bridge, score = *max_score(bridges)
   show bridge
   score
 end
 
-def part2(bridges)
+def part2(input)
+  bridges = gen_bridges(input)
   bridge, score = *max_len(bridges)
   show bridge
   score
@@ -83,14 +91,11 @@ EX
 part 1
 with :part1
 debug!
-example_bridges = bridges(example)
-try example_bridges, 31
+try example, 31
 no_debug!
-puts "generating bridges for puzzle input"
-puzzle_input_bridges = bridges(puzzle_input)
-try puzzle_input_bridges
+try puzzle_input
 
 part 2
 with(:part2)
-try example_bridges, 19
-try puzzle_input_bridges
+try example, 19
+try puzzle_input

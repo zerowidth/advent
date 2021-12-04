@@ -99,4 +99,4 @@ try puzzle_input
 
 part 2
 with(:translated)
-try nil
+try puzzle_input
