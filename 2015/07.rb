@@ -24,10 +24,10 @@ def parse_wires(input)
   wires
 end
 
-def circuit(input, values)
+def circuit(input)
   wires = parse_wires(input)
   filtered = {}
-  values.each { |v| filtered[v.to_sym] = resolve(wires, {}, v) }
+  wires.each_key { |k| filtered[k.to_sym] = resolve(wires, {}, k) }
   filtered
 end
 
@@ -41,25 +41,38 @@ def resolve(wires, memo, which)
   wire = wires[which]
   op = wire.first
   val = case op
-  when :v
-    wire.last
-  when :and
-    resolve(wires, memo, wire[1]) & resolve(wires, memo, wire[2])
-  when :or
-    resolve(wires, memo, wire[1]) | resolve(wires, memo, wire[2])
-  when :lshift
-    (resolve(wires, memo, wire[1]) << resolve(wires, memo, wire[2])) & 0xFFFF
-  when :rshift
-    resolve(wires, memo, wire[1]) >> resolve(wires, memo, wire[2])
-  when :not
-    ~resolve(wires, memo, wire[1]) & 0xFFFF
-  when :get
-    resolve(wires, memo, wire[1])
-  else
-    raise "what? #{wire.inspect}"
-  end
+    when :v
+      wire.last
+    when :and
+      resolve(wires, memo, wire[1]) & resolve(wires, memo, wire[2])
+    when :or
+      resolve(wires, memo, wire[1]) | resolve(wires, memo, wire[2])
+    when :lshift
+      (resolve(wires, memo, wire[1]) << resolve(wires, memo, wire[2])) & 0xFFFF
+    when :rshift
+      resolve(wires, memo, wire[1]) >> resolve(wires, memo, wire[2])
+    when :not
+      ~resolve(wires, memo, wire[1]) & 0xFFFF
+    when :get
+      resolve(wires, memo, wire[1])
+    else
+      raise "what? #{wire.inspect}"
+    end
   memo[which] = val
   val
+end
+
+def part1(input)
+  circuit(input)
+end
+
+def part2(input)
+  wires = parse_wires(input)
+  values = {}
+  wires.each_key { |k| values[k.to_sym] = resolve(wires, {}, k) }
+  puts "setting wire b #{wires["b"].inspect} to #{values[:a]}"
+  wires["b"] = [:get, values[:a].to_s]
+  resolve(wires, {}, "a")
 end
 
 example = <<-S
@@ -95,12 +108,11 @@ expected = {
 
 part 1
 with :circuit
-try example, expected, %w(d e f g h i x y)
-try reordered, expected, %w(d e f g h i x y)
-first = try puzzle_input, nil, %w(a)
+try example, expected
+try reordered, expected
+with :part1
+try(puzzle_input) { |values| values[:a] }
 
 part 2
-wires = parse_wires(puzzle_input)
-puts "setting wire b #{wires["b"].inspect} to #{first[:a]}"
-wires["b"] = [:get, first[:a].to_s]
-puts resolve(wires, {}, "a")
+with :part2
+try puzzle_input
