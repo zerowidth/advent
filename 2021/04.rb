@@ -9,7 +9,7 @@ class Board
   end
 
   def lines
-    @lines ||= (rows + rows.first.zip(*rows.drop(1))).map(&:to_set)
+    @lines ||= (rows + rows.transpose).map(&:to_set)
   end
 
   def mark(num)
@@ -41,7 +41,6 @@ class Board
     debug "---"
   end
 end
-
 
 def part1(input)
   numbers = input.sections.first.numbers
