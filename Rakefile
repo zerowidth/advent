@@ -94,7 +94,7 @@ task :watch do
     end
 
     running = true
-    sh "ONEOFF=true ruby #{last}" do |ok, res|
+    sh "COPY_RESULT=true ruby #{last}" do |ok, res|
       warn res.to_s.colorize(:red) unless ok
       puts
     end

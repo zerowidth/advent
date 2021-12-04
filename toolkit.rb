@@ -105,7 +105,7 @@ def try(input, *args, expect: :expected, **kwargs)
     stringish = value.is_a?(String) && !value.include?("\n") && value.length < 80
     number = value.is_a?(Integer) && !value.zero?
     # env var to prevent clipboard spam when running multiple days in a row
-    if ENV["ONEOFF"] && (stringish || number)
+    if ENV["COPY_RESULT"] && (stringish || number)
       IO.popen("pbcopy", "w") { |io| io.write value.to_s }
       puts " (copied)"
     else
