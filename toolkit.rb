@@ -3,6 +3,7 @@ Bundler.setup
 require "tty-progressbar"
 require "colorize"
 require "diffy"
+require "parser/current"
 
 require "pp"
 require "set"
@@ -41,9 +42,12 @@ end
 
 def part(n)
   puts if n > 1
-  puts(("*" * 30 + " part #{n} " + "*" * 30).colorize(:blue))
+  puts((("*" * 30) + " part #{n} " + ("*" * 30)).colorize(:blue))
 end
 
+# Use the given method for subsequent try calls.
+#
+# The method is invoked with args, keyword args, and a block, if given.
 def with(sym, *args, **kwargs, &block)
   puts
   s = "with :#{sym} "
@@ -58,56 +62,109 @@ def with(sym, *args, **kwargs, &block)
   @block = block
 end
 
-def try(input, *args, expect: :expected, **kwargs)
-  if input.is_a?(PuzzleInput)
-    arg = "puzzle_input"
-  else
-    # wrap the input
-    input = Input.new(input) if input.is_a?(String)
+# try an input with the configured `with` method
+#
+# If the input is not a PuzzleInput, an expected value is required.
+#
+# Implicit expected value:
+#
+#   try input, expected
+#   try arg1, arg2, expected
+#
+# Explicit expected value:
+#
+#   try input, expect: expected
+#   try arg1, arg2, expect: expected
+#
+# all versions can take a block to modify the value after it's calculated.
+#
+# Given
+#
+#   def a(*args) end
+#   with :a, 1, kwarg: value
+#
+# Then:
+#
+#   try 2, 3
+#
+# will invoke a(2, 1, 3, kwarg: value)
+#
+# The first `try` arg comes first since it's implicitly the puzzle or example input.
+#
+def try(*args, expect: nil)
+  unless args.first.is_a?(PuzzleInput)
+    expect ||= args.pop
+    raise ArgumentError.new, "must provide at least one input and an expected value" if args.empty?
 
-    # read the source to get the argument name
-    file, line = *caller.first.split(":")
-    arg = File.readlines(file)[line.to_i - 1].scan(/try (\S+),?/).first&.first
-    arg = arg.sub(/,$/, "") if arg
-    arg ||= args.first.inspect
+    # wrap input strings
+    args[0] = Input.new(args.first) if args.first.is_a?(String)
   end
-  puts
-  puts "try #{arg.colorize(:yellow)}"
-  puts "-" * (4 + arg.length)
 
-  if input.is_a?(PuzzleInput) && ENV["SKIP_INPUT"]
+  if args.first.is_a?(PuzzleInput)
+    arg_name = "puzzle input"
+  elsif args.length == 1
+    # overengineered: common case is an example (huge string), so get the _name_
+    # of the example input using a parser.
+    file, line = *caller.first.split(":")
+
+    # figure out what character the line starts at so we can match it with the parse tree
+    buf = File.read(file)
+    # first newline + 1 means line 2
+    start = buf.indices("\n").to_a[line.to_i - 2] + 1
+    # parse the source, find the `try` invocation, get the argument name
+    source = Parser::CurrentRuby.parse(buf)
+    tries = source.children.select do |child|
+      (child.type == :send && child.children[1] == :try) ||
+        # block invocation is `try(arg) { block }`
+        (child.type == :block && child.children[0].type == :send && child.children[0].children[1] == :try)
+    end
+
+    # unwrap blocks (block (send nil :try ...)) -> (send nil :try ...)
+    tries = tries.map { |child| child.type == :block ? child.children[0] : child }
+    arg_name = if (invocation = tries.detect { |c| c.loc.selector.begin_pos == start })
+        input_arg = invocation.children[2]
+        case input_arg.type
+        when :send
+          input_arg.children[2].to_s # local func call
+        when :lvar
+          input_arg.children.first.to_s # name of the lvar
+        when :const
+          input_arg.children[1].to_s # name of the const
+        when :str, :int
+          args.first.to_s
+        else
+          puts "unknown argument type: #{input_arg}".colorize(:red)
+          args.first.inspect
+        end
+      else
+        puts "no arg found on line #{line} (pos #{start})".colorize(:red)
+        args.first.inspect
+      end
+  else
+    arg_name = args.inspect
+  end
+
+  puts
+  puts "try #{arg_name.colorize(:yellow)}"
+  puts "-" * (4 + arg_name.length)
+
+  if args.first.is_a?(PuzzleInput) && ENV["SKIP_INPUT"]
     puts "(skipping)"
     return
   end
 
-  # maintain parity with "older" API, before kwargs, to differentiate a normal
-  # try(example, expected, arg, arg) from try(input, arg, arg, expected: ...)
-  if expect == :expected && args.length.positive?
-    expect = args.shift
-    expect = :expected if expect.nil? # explicit 'nil' to skip over arguments, again "old" api
-  end
-
   start = Time.now
 
-  # gather arguments including args from a `with` call:
-  args = Array(@args) + Array(args)
-  kwargs = @kwargs.merge(kwargs)
-  # work around a ruby bug, ref:
-  # https://bugs.ruby-lang.org/issues/11860
-  # https://bugs.ruby-lang.org/issues/14183
-  if kwargs.empty?
-    value = @method.call(input, *args, &@block)
-  else
-    value = @method.call(input, *args, **kwargs, &@block)
-  end
-
+  # invoke the method including arguments from `with`:
+  call_args = args.take(1) + @args + args.drop(1)
+  value = @method.call(*call_args, **@kwargs, &@block)
+  # allow transformation by block
   value = yield value if block_given?
 
   elapsed = Time.now - start
   puts "-> completed in #{"%0.5f" % elapsed.to_f} seconds"
 
-  case expect
-  when :expected # this is the puzzle input
+  if args.first.is_a?(PuzzleInput)
     print "=> #{value.inspect.colorize(:magenta)}"
 
     # if this looks like valid output, put it on the clipboard
@@ -120,9 +177,8 @@ def try(input, *args, expect: :expected, **kwargs)
     else
       puts
     end
-
     puts
-  when value
+  elsif value == expect
     puts "=> #{value.inspect.colorize(:green)}"
   else
     puts "=> #{"mismatch:".colorize(:red)}\n"
@@ -190,9 +246,9 @@ class Integer
     a1 = b0 = 0
     until r1.zero?
       q = r0 / r1
-      r0, r1 = r1, r0 - q * r1
-      a0, a1 = a1, a0 - q * a1
-      b0, b1 = b1, b0 - q * b1
+      r0, r1 = r1, r0 - (q * r1)
+      a0, a1 = a1, a0 - (q * a1)
+      b0, b1 = b1, b0 - (q * b1)
     end
     [r0, a0, b0]
   end

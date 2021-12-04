@@ -161,9 +161,9 @@ EX
 
 part 1
 with :single_phase_sum
-try ex1, 43210, [4,3,2,1,0]
-try ex2, 54321, [0,1,2,3,4]
-try ex3, 65210, [1,0,4,3,2]
+try ex1, [4,3,2,1,0], 43210
+try ex2, [0,1,2,3,4], 54321
+try ex3, [1,0,4,3,2], 65210
 with :phase_sum_max
 try puzzle_input
 
@@ -180,7 +180,7 @@ EX
 
 part 2
 with :single_phase_sum_loop
-try ex4, 139629729, [9,8,7,6,5]
-try ex5, 18216, [9,7,8,5,6]
+try ex4, [9,8,7,6,5], 139629729
+try ex5, [9,7,8,5,6], 18216
 with :phase_sum_loop_max
 try puzzle_input

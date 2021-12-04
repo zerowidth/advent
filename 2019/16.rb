@@ -163,22 +163,22 @@ ex5 = "03036732577212944063491565474664"
 part 2
 
 with :part2_brute, 10, 2
-try ex5, "237", (40..42)
+try ex5, (40..42), "237"
 with :part2_efficiency, 10, 2
-try ex5, "237", (40..42)
+try ex5, (40..42), "237"
 with :part2_ranges, 10, 2
-try ex5, "237", (40..42)
+try ex5, (40..42), "237"
 
 with :part2_brute, 100, 20
-try ex5, "66244648", (440...448)
+try ex5, (440...448), "66244648"
 with :part2_efficiency, 100, 20
-try ex5, "66244648", (440...448)
+try ex5, (440...448), "66244648"
 puts "baseline is 2.1 seconds"
 with :part2_ranges, 100, 20
-try ex5, "66244648", (440...448)
+try ex5, (440...448), "66244648"
 
 with :part2_ranges, 100, 10_000
 o = (ex5[0...7].to_i)
-try ex5, "84462026", (o..(o+7))
+try ex5, (o..(o+7)), "84462026"
 o = (puzzle_input[0...7].to_i)
-try puzzle_input, nil, (o..(o+7))
+try puzzle_input, (o..(o+7))
