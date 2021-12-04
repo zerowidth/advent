@@ -38,6 +38,50 @@ def power_level(x, y, serial)
   power - 5
 end
 
+# https://en.wikipedia.org/wiki/Summed-area_table
+class SummedAreaTable
+  attr_reader :areas, :width, :height
+
+  def initialize(grid, width, height)
+    @areas = Array.new(width, height)
+    @width = width
+    @height = height
+
+    areas[0] = grid[0]
+
+    height.times_with_progress(title: "generating areas") do |y|
+      width.times do |x|
+        areas[x + (y * width)] =
+          grid[x + (y * width)] +
+          at(x - 1, y) +
+          at(x, y - 1) -
+          at(x - 1, y - 1)
+      end
+    end
+  end
+
+  def at(x, y)
+    if x < 0 || x >= width || y < 0 || y > height
+      0
+    else
+      areas[x + (y * width)]
+    end
+  end
+
+  def sum(x, y, w, h)
+    a = at(x - 1, y - 1)
+    b = at(x - 1 + w, y - 1)
+    c = at(x - 1, y - 1 + h)
+    d = at(x - 1 + w, y - 1 + h)
+    d - b - c + a
+  end
+end
+
+def sat_test(input, x, y, w, h)
+  sat = SummedAreaTable.new(input.numbers, 6, 6)
+  sat.sum(x, y, w, h)
+end
+
 def part2(input)
   serial = input.numbers.first
 
@@ -47,41 +91,34 @@ def part2(input)
     power_level x, y, serial
   end
 
-  # hash of: y => {length => [values]}
-  rows = Hash.of { Hash.of { [] } }
-  bar = progress_bar(title: "rows", total: 300)
-  0.upto(299).each do |y|
-    row = 0.upto(299).map { |x| grid[x + y * 300] }
-    rows[y][1] = row
-    2.upto(300) do |length|
-      rows[y][length] = row.each_cons(length).map(&:sum)
-    end
-    bar.advance
-  end
-  bar.finish
-  by_corner = {} # [x, y, length] => sum
+  sat = SummedAreaTable.new(grid, 300, 300)
 
-  bar = progress_bar(total: 300, title: "areas")
-  1.upto(300) do |size|
-    0.upto(300 - size) do |y|
-      0.upto(300 - size) do |x|
-        value = 0.upto(size - 1).map do |row|
-          rows.fetch(y + row).fetch(size)[x]
-        end.sum
-        by_corner[[x, y, size]] = value
+  bar = progress_bar(total: 300, title: "searching for best area")
+  max = 1.upto(300).map do |size|
+    best = 0.upto(300 - size).flat_map do |y|
+      0.upto(300 - size).map do |x|
+        [x, y, size, sat.sum(x, y, size, size)]
       end
-    end
+    end.max_by(&:last)
     bar.advance
-  end
+    best
+  end.max_by(&:last)
   bar.finish
 
-  best = by_corner.max_by(&:last)
-  puts "best: #{best}"
-  best.first.map(&:to_s).join(",")
+  max.first(3).map(&:to_s).join(",")
 end
 
 ex1 = <<-EX
 18
+EX
+
+sat_example = <<EX
+31 2 4 33 5 36
+12 26 9 10 29 25
+13 17 21 22 20 18
+24 23 15 16 14 19
+30 8 28 27 11 7
+1 35 34 3 32 6
 EX
 
 part 1
@@ -92,8 +129,13 @@ no_debug!
 try puzzle_input
 
 part 2
-with :part2
 debug!
+
+with :sat_test
+try sat_example, 0, 0, 1, 1, 31
+try sat_example, 2, 3, 3, 2, 111
+
+with :part2
 try ex1, expect: "90,269,16"
 no_debug!
 try puzzle_input
