@@ -13,8 +13,7 @@ end
 
 def fft(list, phases)
   patterns = generate_patterns list.length
-  phases.times do |phase|
-    print "."
+  phases.times_with_progress(title: "fft") do |phase|
     out = Array.new(list.length, 0)
     list.length.times.each do |elem|
       total = list.length.times.inject(0) do |sum, i|
@@ -24,20 +23,19 @@ def fft(list, phases)
     end
     list = out
   end
-  puts
   list
 end
 
 def part1(input, phases)
-  list = input.strip.split("").map(&:to_i)
-  fft(list, phases).join("")[0...8]
+  list = input.strip.chars.map(&:to_i)
+  fft(list, phases).join[0...8]
 end
 
 # basic brute force version
 def part2_brute(input, phases, repeats, offsets)
   digits = input.strip.split("").map(&:to_i)
   out = fft(digits * repeats, phases)
-  STDERR.puts "o: #{(out.join("")).inspect}"
+  debug "o: #{(out.join("")).inspect}"
   offsets.map { |o| out[o] }.join("")
 end
 
@@ -73,8 +71,7 @@ def part2_efficiency(input, phases, repeats, offsets)
   # STDERR.puts "required: #{(required).inspect}"
   # STDERR.puts "list: #{(list).inspect}"
 
-  print "performing fft"
-  phases.times do |phase|
+  phases.times_with_progress(title: "performing fft") do |phase|
     out = Array.new(digits.length * repeats)
     elements.each do |elem|
       sum = 0
@@ -86,9 +83,7 @@ def part2_efficiency(input, phases, repeats, offsets)
     end
     list = out
     y = (digits.length * repeats).times.map { |i| list[i] ? list[i] : " "  }.join("")
-    print "."
   end
-  puts
 
   x = (digits.length * repeats).times.map { |i| elements.include?(i) ? "x" : " " }.join("")
   STDERR.puts "x: #{(x).inspect}"
@@ -113,8 +108,7 @@ def part2_ranges(input, phases, repeats, offsets)
     list[i-offset] = digits[i % digits.length]
   end
 
-  print "performing fft"
-  phases.times do |phase|
+  phases.times_with_progress(title: "performing fft") do |phase|
     # the trick here is that if the starting offset is more than halfway through
     # the input list, then the pattern is merely 1, repeating, for the remainder
     # of the input list. that means each element is just the sum (mod 10) of the
@@ -130,9 +124,7 @@ def part2_ranges(input, phases, repeats, offsets)
       sum -= value
     end
     list = out
-    print "."
   end
-  puts
 
   offsets.map { |o| list[o-offset] }.join("")
 end
