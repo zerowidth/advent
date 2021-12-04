@@ -21,6 +21,14 @@ def next_password(input)
   input
 end
 
+def part1(input)
+  next_password(input)
+end
+
+def part2(input)
+  next_password(next_password(input))
+end
+
 part 1
 with :valid?
 try "hijklmmn", false
@@ -31,10 +39,11 @@ try "ghjaabcc", true
 with :increment
 try "a", "b"
 try "z", "aa"
-with :next_password
+with :part1
 try "abcdefgh", "abcdffaa"
 try "ghijklmn", "ghjaabcc"
-pass = try puzzle_input
+try puzzle_input
 
 part 2
-try pass
+with :part2
+try puzzle_input
