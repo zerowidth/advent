@@ -24,14 +24,6 @@ def no_debug!
   $debug = false
 end
 
-# def with_debug
-#   old = $debug
-#   $debug = true
-#   yield
-# ensure
-#   $debug = old
-# end
-
 def debug(*args)
   puts(*args) if $debug
 end
