@@ -1,20 +1,10 @@
 require_relative "../toolkit"
 
 def points(lines)
-  # brute force: all points for all lines
-  points = Hash.of_array
+  points = Hash.new(0)
   lines.each.with_index do |(x1, y1, x2, y2), i|
     debug "line #{i} from #{x1} #{y1} to #{x2} #{y2}"
-    dx = x2 <=> x1
-    dy = y2 <=> y1
-    x, y = x1, y1
-    points[[x, y]] << i
-    loop do
-      x += dx
-      y += dy
-      points[[x, y]] << i
-      break if x == x2 && y == y2
-    end
+    x1.to(x2).safe_zip(y1.to(y2)).each { |x, y| points[[x, y]] += 1 }
   end
   points
 end
@@ -22,12 +12,12 @@ end
 def part1(input)
   lines = input.lines_of(:numbers)
   lines.select! { |x1, y1, x2, y2| x1 == x2 || y1 == y2 }
-  points(lines).values.count { |v| v.length > 1 }
+  points(lines).values.count { |v| v > 1 }
 end
 
 def part2(input)
   lines = input.lines_of(:numbers)
-  points(lines).values.count { |v| v.length > 1 }
+  points(lines).values.count { |v| v > 1 }
 end
 
 ex1 = <<EX

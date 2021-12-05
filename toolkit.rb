@@ -252,6 +252,16 @@ class Integer
     a % mod
   end
 
+  def to(other)
+    if other > self
+      upto(other)
+    elsif other < self
+      downto(other)
+    else
+      [self].repeated
+    end
+  end
+
   # more efficient than shoving .times.each through an enumerator
   def times_with_progress(title: nil, &block)
     return times(&block) if debug?
@@ -330,6 +340,22 @@ module Enumerable
     Enumerator.new do |y|
       min_length.upto(length) do |len|
         each_cons(len) { |seq| y << seq }
+      end
+    end
+  end
+
+  def repeated
+    Enumerator.new do |y|
+      loop { each { |v| y << v } }
+    end
+  end
+
+  def safe_zip(*others)
+    Enumerator.new do |y|
+      lazy.zip(*others).each do |vs|
+        break if vs.any?(&:nil?)
+
+        y << vs
       end
     end
   end
