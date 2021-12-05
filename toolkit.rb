@@ -351,6 +351,8 @@ module Enumerable
   end
 
   def safe_zip(*others)
+    ([self] + others).any? { |enum| enum.size && enum.size < Float::INFINITY } or
+      raise ArgumentError, "all enumerators in safe_size are infinite"
     Enumerator.new do |y|
       lazy.zip(*others).each do |vs|
         break if vs.any?(&:nil?)
