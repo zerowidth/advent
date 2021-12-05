@@ -1,12 +1,10 @@
 require_relative "../toolkit"
 
 def points(lines)
-  points = Hash.new(0)
-  lines.each.with_index do |(x1, y1, x2, y2), i|
-    debug "line #{i} from #{x1} #{y1} to #{x2} #{y2}"
-    x1.to(x2).safe_zip(y1.to(y2)).each { |x, y| points[[x, y]] += 1 }
-  end
-  points
+  lines.flat_map do |x1, y1, x2, y2|
+    debug "line from #{x1} #{y1} to #{x2} #{y2}"
+    x1.to(x2).safe_zip(y1.to(y2)).to_a
+  end.tally
 end
 
 def part1(input)
