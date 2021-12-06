@@ -1,8 +1,7 @@
 require_relative "../toolkit"
 
 def part1(input, days:)
-  fish = Hash.new(0)
-  input.numbers.each { |f| fish[f] += 1 }
+  fish = input.numbers.tally
   days.times do
     fish = fish.each_with_object(Hash.new(0)) do |(t, count), next_fish|
       if t.zero?
