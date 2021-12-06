@@ -1,29 +1,19 @@
 require_relative "../toolkit"
 
-# fish takes 7 days, number is its age
-# new fish takes 9 days
-
 def part1(input, days:)
   fish = Hash.new(0)
   input.numbers.each { |f| fish[f] += 1 }
   days.times do
-    next_fish = Hash.new(0)
-    fish.each do |t, c|
+    fish = fish.each_with_object(Hash.new(0)) do |(t, count), next_fish|
       if t.zero?
-        next_fish[8] += c
-        next_fish[6] += c
+        next_fish[8] += count
+        next_fish[6] += count
       else
-        next_fish[t - 1] += c
+        next_fish[t - 1] += count
       end
     end
-    fish = next_fish
   end
   fish.values.sum
-end
-
-def part2(input)
-  input.lines
-  nil
 end
 
 ex1 = <<EX
