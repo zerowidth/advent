@@ -3,20 +3,18 @@ require_relative "../toolkit"
 def part1(input)
   positions = input.numbers
   positions.min.upto(positions.max).map do |pos|
-    score = positions.map { |p| (pos - p).abs }.sum
-    [pos, score]
-  end.min_by(&:last).last
+    positions.map { |p| (pos - p).abs }.sum
+  end.min
 end
 
 def part2(input)
   positions = input.numbers
   positions.min.upto(positions.max).map do |pos|
-    score = positions.map do |p|
-       distance = (pos - p).abs
-       1.upto(distance).sum
+    positions.map do |p|
+      n = (pos - p).abs
+      n * (n + 1) / 2 # https://oeis.org/A000217
     end.sum
-    [pos, score]
-  end.min_by(&:last).last
+  end.min
 end
 
 ex1 = <<EX
