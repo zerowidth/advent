@@ -1,65 +1,68 @@
 require_relative "../toolkit"
 
 class Grid
-  attr_reader :width, :height
+  attr_reader :values, :width, :height
 
-  def initialize(values, width, height)
+  def initialize(values, width)
     @values = values
     @width = width
-    @height = height
-    raise "no? #{@values.length}" unless @values.length == @width * @height
+    @height = values.length / width
   end
 
-  def low_points
-    indices = @values.length.times.select do |i|
-      x = i % @width
-      y = i / @width
-      v = get(x, y)
-      low = [
-        get(x + 1, y),
-        get(x - 1, y),
-        get(x, y + 1),
-        get(x, y - 1),
-      ].compact.all? { |w| w > v }
-    end
+  include Enumerable
 
-    indices.map { |i| [i % width, i / width] }
+  def each
+    0.upto(height - 1) do |y|
+      0.upto(width - 1) do |x|
+        yield [x, y]
+      end
+    end
+  end
+
+  def get(x, y)
+    return nil if y < 0 || y >= height || x < 0 || x >= width
+
+    values[x + (y * width)]
   end
 
   def neighbors(x, y)
     [
-        [x + 1, y],
-        [x - 1, y],
-        [x, y + 1],
-        [x, y - 1],
-    ].select { |x, y| ok?(x, y) }
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ].select do |nx, ny|
+      nx >= 0 && nx < width && ny >= 0 && ny < height
+    end
   end
 
-  def ok?(x, y)
-    (0...width).include?(x) && (0...height).include?(y)
-  end
-
-  def get(x, y)
-    return nil if y < 0 || y >= @height || x < 0 || x >= @width
-    @values[x + (y * @width)]
+  def neighbor_values(x, y)
+    neighbors(x, y).map { |nx, ny| get(nx, ny) }
   end
 end
 
 def part1(input)
-  g = Grid.new(input.digits, input.lines.first.digits.length, input.lines.length)
-  g.low_points.map { |x, y| g.get(x, y) + 1 }.sum
+  grid = Grid.new(input.digits, input.lines.first.digits.length)
+  low_points = grid.select do |x, y|
+    value = grid.get(x, y)
+    grid.neighbor_values(x, y).all? { |nv| nv > value }
+  end
+  low_points.map { |x, y| grid.get(x, y) + 1 }.sum
 end
 
 def part2(input)
-  grid = Grid.new(input.digits, input.lines.first.digits.length, input.lines.length)
-  basins = grid.low_points
+  grid = Grid.new(input.digits, input.lines.first.digits.length)
 
-  basins.map do |basin|
+  low_points = grid.select do |x, y|
+    value = grid.get(x, y)
+    grid.neighbor_values(x, y).all? { |nv| nv > value }
+  end
+
+  low_points.map do |basin|
     seen = Set.new
     queue = []
     queue << basin
-
-    while pos = queue.pop
+    while (pos = queue.pop)
       seen << pos
       grid.neighbors(*pos).each do |n|
         queue << n unless seen.include?(n) || grid.get(*n) == 9
