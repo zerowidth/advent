@@ -7,8 +7,7 @@ POINTS = {
   ">" => 25137
 }
 
-OPEN = ["(", "{", "[", "<"]
-CLOSE = {
+PAIRS = {
   "(" => ")",
   "{" => "}",
   "[" => "]",
@@ -21,10 +20,10 @@ def part1(input)
     stack = []
     bad = nil
     line.each do |char|
-      if OPEN.include?(char)
+      if (close = PAIRS[char])
         debug (" " * stack.size) + "open #{char}"
-        stack << char
-      elsif CLOSE[stack.last] == char
+        stack << close
+      elsif stack.last == char
         debug (" " * stack.size) + "close #{char}"
         stack.pop
       else
@@ -46,9 +45,9 @@ def part2(input)
     stack = []
     bad = nil
     line.each do |char|
-      if OPEN.include?(char)
-        stack << char
-      elsif CLOSE[stack.last] == char
+      if (close = PAIRS[char])
+        stack << close
+      elsif stack.last == char
         stack.pop
       else
         bad = char
@@ -58,7 +57,7 @@ def part2(input)
     sequences << stack.reverse unless bad
   end
   totals = sequences.map do |seq|
-    points = seq.map { |c| CHAR_POINTS.index CLOSE[c] }
+    points = seq.map { |c| CHAR_POINTS.index c }
     points.reduce(0) { |total, p| (total * 5) + p }
   end
   debug "totals: #{totals.sort}"
