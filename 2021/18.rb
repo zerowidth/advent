@@ -1,88 +1,141 @@
 require_relative "../toolkit"
 require "json"
 
-def sum(a, b)
-  reduce "[#{a},#{b}]"
+class Integer
+  def pair?
+    false
+  end
+
+  def value?
+    true
+  end
 end
 
-# returns true if num was modified
+class Array
+  def left
+    self[0]
+  end
+
+  def left=(value)
+    self[0] = value
+  end
+
+  def right
+    self[1]
+  end
+
+  def right=(value)
+    self[1] = value
+  end
+
+  def pair?
+    true
+  end
+
+  def value?
+    false
+  end
+
+  def to_s
+    "[#{left.to_s},#{right.to_s}]"
+  end
+end
+
+def _explode(node, depth: 0, push_left: 0, push_right: 0)
+  debug ("  " * depth) + "at #{node} depth #{depth} <-#{push_left} #{push_right}->"
+  return [node, 0, 0, false] if node.value?
+
+  if node.pair? && depth == 4
+    debug "explode: #{node}"
+    return 0, node.left, node.right, true
+  end
+
+  lv = rv = 0
+  if node.left.pair?
+    node.left, lv, rv, changed = _explode(node.left, depth: depth + 1, push_left: push_left, push_right: push_right)
+    if node.right.value?
+      node.right += rv
+      rv = 0
+    end
+
+    return node, lv, rv, true if changed
+  elsif push_left > 0
+    node += push_left
+    changed = true
+    return node, 0, 0, true
+  end
+
+  if node.right.pair?
+    node.right, lv, rv, c = _explode(node.right, depth: depth + 1, push_left: push_left, push_right: push_right)
+    changed ||= c
+    if node.left.value?
+      node.left += lv
+      lv = 0
+    end
+  elsif push_right > 0
+    node += push_right
+    return node, 0, 0, true
+  end
+
+  [node, 0, 0, false]
+end
+
 def explode(num)
-  # first, look for explode, count left brackets
-  depth = 0
-  pos = nil
-  num.chars.each.with_index do |c, i|
-    case c
-    when "["
-      depth += 1
-    when "]"
-      depth -= 1
-    end
-
-    if depth == 5 && num[i, 5] =~ /\[\d,\d\]/
-      pos = i
-      break
-    end
-  end
-
-  return false unless pos
-
-  pair = num[pos, 5]
-  values = JSON.parse(pair)
-
-  if debug?
-    debug_num = num.dup
-    debug_num[pos, 5] = pair.colorize(:blue)
-    debug "explode: #{debug_num}"
-  end
-
-  # find number to the left, if any
-  left = num.indices(/\d+/).select { |i| i < pos }.last
-  # find number to the right, if any
-  right = num.indices(/\d+/).detect { |i| i > (pos + 5) }
-
-  # right to left, update string:
-  num[right..] = num[right..].sub(/\d+/) { |rnum| (rnum.to_i + values.last).to_s } if right
-  num[pos, 5] = "0"
-  num[left..] = num[left..].sub(/\d+/) { |lnum| (lnum.to_i + values.first).to_s } if left
-  true
+  debug "exploding #{num}"
+  num, _lv, _rv, changed = _explode(num)
+  [num, changed]
 end
 
 def split(num)
-  return false unless (pos = num.index(/\d\d/))
+  if num.value?
+    if num > 9
+      debug "split: #{num}"
+      return [num / 2, (num / 2) + (num % 2)], true
+    end
 
-  value = num[pos, 2]
-
-  if debug?
-    debug_num = num.dup
-    debug_num[pos, 2] = value.colorize(:yellow)
-    debug "split:   #{debug_num}"
+    return num, false
   end
 
-  value = value.to_i
-  num[pos, 2] = "[#{value / 2},#{(value / 2) + (value % 2)}]"
+  left, changed = split(num.left)
+  return [left, num.right], true if changed
 
-  true
+  right, changed = split(num.right)
+  [[left, right], changed]
 end
 
 def reduce(num)
-  changed = false
+  debug "reducing #{num}"
   loop do
-    break unless explode(num) || split(num)
+    num, exploded = explode(num)
+    next if exploded
+
+    num, was_split = split(num)
+    break unless was_split
   end
   debug "reduced: #{num}"
   num
 end
 
-def sum_list(input)
-  input.lines.reduce { |a, b| sum(a, b) }
+def sum(a, b)
+  reduce [a, b]
 end
 
-def mag(num)
+def parse(line)
+  JSON.parse(line)
+end
 
+# for testing reduce
+def reduce_line(input)
+  reduce(parse(input)).to_s
+end
+
+# for testing sums
+def sum_lines(input)
+  input.lines.map_with(:parse).reduce { |a, b| sum(a, b) }.to_s
 end
 
 def part1(input)
-  reduce(input.lines)
+  sum = input.lines.map_with(:parse).reduce { |a, b| sum(a, b) }
 end
 
 def part2(input)
@@ -116,12 +169,12 @@ EX
 
 part 1
 debug!
-with :reduce
+with :reduce_line
 try "[[[[[9,8],1],2],3],4]", "[[[[0,9],2],3],4]"
 try "[7,[6,[5,[4,[3,2]]]]]", "[7,[6,[5,[7,0]]]]"
 try "[[6,[5,[4,[3,2]]]],1]", "[[6,[5,[7,0]]],3]"
 try "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]", "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
-with :sum_list
+with :sum_lines
 try ex1, "[[[[1,1],[2,2]],[3,3]],[4,4]]"
 try ex2, "[[[[3,0],[5,3]],[4,4]],[5,5]]"
 try ex3, "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
