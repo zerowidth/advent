@@ -141,18 +141,43 @@ task :next do
   req["Cookie"] = "session=#{ENV["ADVENT_SESSION"]}"
   res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
 
-  unless res.code == "200"
+  if res.code == "200"
+    File.open(input, "w") { |f| f.write res.body }
+    puts "created #{input}"
+    sh "git add #{input}"
+    sh "code #{input}"
+  else
     puts "input fetch failed!"
+    puts uri
     puts res.inspect
-    exit 1
+    # comment this out if i need to proceed
+    # exit 1
+    sh "touch #{input}"
+    sh "git add #{input}"
+    sh "code #{input}"
   end
 
   FileUtils.cp template, script
   puts "created #{script}"
-  File.open(input, "w") { |f| f.write res.body }
-  puts "created #{input}"
   sh "git add -N #{script}"
-  sh "git add #{input}"
-  sh "code #{input}"
   sh "code #{script}"
+end
+
+task :input do
+  files = files_for_year.sort.map { |f| File.basename(f, ".rb") }
+  last = (files.last || "01")
+  input = root / year / "#{last}.txt"
+  uri = URI("https://adventofcode.com/#{year}/day/#{last.to_i}/input")
+  req = Net::HTTP::Get.new(uri)
+  req["Cookie"] = "session=#{ENV["ADVENT_SESSION"]}"
+  res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+  if res.code == "200"
+    File.open(input, "w") { |f| f.write res.body }
+    puts "created #{input}"
+    sh "git add #{input}"
+  else
+    puts "input fetch failed!"
+    puts uri
+    puts res.inspect
+  end
 end
