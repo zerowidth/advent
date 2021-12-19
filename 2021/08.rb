@@ -27,8 +27,6 @@ DIGITS = {
   1 => %w[c f]
 }.transform_values(&:to_set).map(&:reverse).to_h
 
-EASY = [1, 7, 4] # leaving out 8, it doesn't give us any info
-
 def part1(input)
   input.lines.map do |line|
     line.split("|").last.words.count { |w| [2, 3, 4, 7].include? w.length }
