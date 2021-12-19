@@ -15,12 +15,12 @@ def part1(input)
     dim, pos = *f
     if dim == "x"
       dots = dots.map do |x, y|
-        x = pos - (x - pos) if x > pos
+        x = (2 * pos) - x if x > pos
         [x, y]
       end
     else
       dots = dots.map do |x, y|
-        y = pos - (y - pos) if y > pos
+        y = (2 * pos) - y if y > pos
         [x, y]
       end
     end
