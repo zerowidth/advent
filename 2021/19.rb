@@ -1,15 +1,8 @@
 require_relative "../toolkit"
 
 TWO_D_ROTATIONS = [
-  # there were no rotations in the 2d example
+  # there are no rotations in the 2d example
   Matrix[[1, 0], [0, 1]], # x y
-# Matrix[[1, 0], [0, -1]], # x -y
-# Matrix[[0, 1], [1, 0]], # y x
-# Matrix[[0, 1], [-1, 0]], # y -x
-# Matrix[[-1, 0], [0, 1]], # -x y
-# Matrix[[-1, 0], [0, -1]], # -x -y
-# Matrix[[0, -1], [1, 0]], # -y x
-# Matrix[[0, -1], [-1, 0]], # -y -x
 ]
 
 THREE_D_ROTATIONS = [
@@ -54,28 +47,26 @@ class Array
   def rotate(rotation)
     (rotation * Matrix.column_vector(self)).column(0).to_a
   end
+
+  def unrotate(rotation)
+    # assumes integers here. good enough.
+    (rotation.inverse * Matrix.column_vector(self)).column(0).to_a.map(&:floor)
+  end
 end
 
 class Scanner
-  attr_reader :num, :beacons, :spaces, :position, :rotation
+  attr_reader :num, :relative_locations, :beacons, :spaces, :position, :rotation
 
-  def initialize(num, beacons, rotations:)
+  def initialize(num, relative_locations, rotations:)
     @num = num
-    @beacons = beacons
+    @relative_locations = relative_locations
     @spaces = Hash.of_array
     rotations.each do |rotation|
-      rotated = beacons.map { |b| b.rotate(rotation) }
+      rotated = relative_locations.map { |b| b.rotate(rotation) }
       rotated.each do |beacon|
+        # store map of rotation matrix to lists of beacons with relative positioning in the new rotated frame
         @spaces[rotation] << rotated.map { |other| beacon.zip(other).map { |b, o| o - b } }
       end
-    end
-  end
-
-  def positioned_beacons
-    raise "no location" unless located?
-
-    beacons.map do |beacon|
-      position.zip(beacon.rotate(rotation)).map { |p, b| p + b }
     end
   end
 
@@ -86,30 +77,52 @@ class Scanner
   def locate(position, rotation)
     @position = position
     @rotation = rotation
+    # beacons are absolutely positioned
+    @beacons = @relative_locations.map do |beacon|
+      position.zip(beacon.unrotate(rotation)).map { |p, b| p + b }
+    end
+    debug "scanner #{num} located at #{position} #{beacons}"
   end
 
   def overlap?(other, minimum:)
     # find first scanner which has an overlapping beacon space with another
     debug "comparing scanner #{num} to scanner #{other.num}"
 
-    # used fixed initial reference orientation, we can orient the other to match
-    spaces.values.first.each do |space|
+    # used fixed zero reference orientation, we can orient the other to match
+    spaces.values.first.each do |bspace|
       other.spaces.each do |orotation, ospaces|
         # debug "  at rotation #{orotation.to_a}"
         ospaces.each do |ospace|
-          overlap = space & ospace
+          overlap = bspace & ospace
           next unless overlap.length >= minimum
 
-          debug "  #{ospace}: overlap #{overlap}"
+          # found an overlapping set of relative beacon positions.
+          # we know:
+          # - where this scanner is, and what its orientation is
+          # - the beacons we matched with and their relative position in zero orientation
+          # - which orientation the other scanner is in to match beacon sets
+          # - the relative position of any beacon in that orientation
+          # we want:
+          # - the relative position of the scanner in zero orientation, and its orientation
+
+          # debug "  #{ospace}: overlap #{overlap}"
           # locate the other scanner relative to this one:
-          # S1 -> B -> S2
-          # debug "overlap: #{overlap}"
-          this_beacon = beacons[space.index(overlap.first)]
-          # debug "this_beacon: #{this_beacon}"
-          other_beacon = other.beacons[ospace.index(overlap.first)]
-          # debug "other_beacon: #{other_beacon}"
+          # S1(abs) -> B -> S2 (relative, rotated)
+          obs = overlap.map { |o| beacons[bspace.index(o)] }
+          debug "overlapping beacons absolutely positioned:\n#{obs.sort.map(&:to_s).join("\n")}"
+
+          which_beacon = bspace.index(overlap.first)
+          debug "which_beacon: #{which_beacon}"
+          this_beacon = beacons[which_beacon] # absolute position
+          debug "this_beacon: #{this_beacon}"
+          # other beacon in relative position (relative and rotated)
+          other_beacon = other.relative_locations[ospace.index(overlap.first)]
+          debug "other_beacon (relative): #{other_beacon}"
+          debug "orotation: #{orotation}"
+          other_beacon = other_beacon.unrotate(orotation).unrotate(rotation)
+          debug "other_beacon (relative, unrotated): #{other_beacon}"
           pos = this_beacon.zip(other_beacon).map { |t, o| t - o }
-          # debug "pos: #{pos}"
+          debug "pos: #{pos}"
           return pos, orotation
         end
       end
@@ -127,32 +140,36 @@ def part1(input, rotations:, minimum:)
     beacons = section.lines.drop(1).map(&:signed_numbers)
     Scanner.new(i, beacons, rotations: rotations)
   end
-  scanners.first.locate([0, 0], rotations.first)
+  scanners.first.locate([0] * rotations.first.column(0).to_a.length, rotations.first)
 
   to_match = scanners.reject(&:located?)
+  compared = Set.new # don't compare twice!
+
   until to_match.empty?
     scanners.select(&:located?).each do |scanner|
       # see if we can match:
+      matched = false
       to_match.each do |candidate|
-        if (pos, rot = scanner.overlap?(candidate, minimum: minimum))
-          debug "matched #{scanner.num} to #{candidate.num}"
-          candidate.locate(pos, rot)
-          to_match.delete(candidate)
-          next
-        end
+        key = [scanner.num, candidate.num]
+        next if compared.include?(key)
+
+        compared << key
+
+        next unless (pos, rot = scanner.overlap?(candidate, minimum: minimum))
+
+        matched = true
+        debug "matched #{scanner.num} to #{candidate.num}"
+        candidate.locate(pos, rot)
+        to_match.delete(candidate)
       end
+      break if matched
     end
     debug "loop"
   end
 
-  a = scanners.first
-  b = scanners.last
+  debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
 
-  if (pos, rot = a.overlap?(b, minimum: minimum))
-    b.locate(pos, rot)
-  end
-
-  beacons = scanners.flat_map(&:positioned_beacons).uniq
+  beacons = scanners.flat_map(&:beacons).uniq
   debug "beacons:\n#{beacons.sort.map(&:to_s).join("\n")}"
   beacons.length
 end
