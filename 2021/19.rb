@@ -49,8 +49,7 @@ class Array
   end
 
   def unrotate(rotation)
-    # assumes integers here. good enough.
-    (rotation.inverse * Matrix.column_vector(self)).column(0).to_a.map(&:floor)
+    (rotation.transpose * Matrix.column_vector(self)).column(0).to_a
   end
 end
 
@@ -77,11 +76,12 @@ class Scanner
   def locate(position, rotation)
     @position = position
     @rotation = rotation
-    # beacons are absolutely positioned
+    # store beacons absolutely positioned:
     @beacons = @relative_locations.map do |beacon|
       position.zip(beacon.unrotate(rotation)).map { |p, b| p + b }
     end
-    debug "scanner #{num} located at #{position} #{beacons}"
+    debug "scanner #{num} located at #{position} with rotation #{rotation}".colorize(:yellow)
+    # debug "  beacons:\n    #{beacons.sort.map(&:to_s).join("\n    ")}"
   end
 
   def overlap?(other, minimum:)
@@ -109,20 +109,17 @@ class Scanner
           # locate the other scanner relative to this one:
           # S1(abs) -> B -> S2 (relative, rotated)
           obs = overlap.map { |o| beacons[bspace.index(o)] }
-          debug "overlapping beacons absolutely positioned:\n#{obs.sort.map(&:to_s).join("\n")}"
+          debug "overlapping beacons absolutely positioned:\n  #{obs.sort.map(&:to_s).join("\n  ")}"
 
-          which_beacon = bspace.index(overlap.first)
-          debug "which_beacon: #{which_beacon}"
-          this_beacon = beacons[which_beacon] # absolute position
-          debug "this_beacon: #{this_beacon}"
+          this_beacon = beacons[bspace.index(overlap.first)] # absolute position
+          debug "this beacon: #{this_beacon} (#{rotation})"
           # other beacon in relative position (relative and rotated)
           other_beacon = other.relative_locations[ospace.index(overlap.first)]
-          debug "other_beacon (relative): #{other_beacon}"
-          debug "orotation: #{orotation}"
-          other_beacon = other_beacon.unrotate(orotation).unrotate(rotation)
-          debug "other_beacon (relative, unrotated): #{other_beacon}"
+          # debug "other beacon (relative): #{other_beacon} orotation #{orotation}"
+          other_beacon = other_beacon.rotate(orotation).rotate(rotation)
+          # debug "other_beacon (relative, unrotated): #{other_beacon}"
           pos = this_beacon.zip(other_beacon).map { |t, o| t - o }
-          debug "pos: #{pos}"
+          # debug "pos: #{pos}"
           return pos, orotation
         end
       end
@@ -170,7 +167,7 @@ def part1(input, rotations:, minimum:)
   debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
 
   beacons = scanners.flat_map(&:beacons).uniq
-  debug "beacons:\n#{beacons.sort.map(&:to_s).join("\n")}"
+  # debug "beacons:\n#{beacons.sort.map(&:to_s).join("\n")}"
   beacons.length
 end
 
