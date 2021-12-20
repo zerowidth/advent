@@ -59,7 +59,6 @@ class Array
   def untranslate(dir)
     zip(dir).map { |me, d| me - d }
   end
-
 end
 
 class Scanner
@@ -75,7 +74,7 @@ class Scanner
   def calculate_beacon_spaces
     @spaces = Hash.of_array
     @rotations.each do |rotation|
-      rotated = relative_locations.map { |b| b.rotate(rotation) }
+      rotated = relative_locations.map { |b| b.unrotate(rotation) }
       rotated.each do |beacon|
         # store map of rotation matrix to lists of beacons with relative positioning in the new rotated frame
         # TODO are all these needed? lazily calculate? don't need at all?
@@ -114,39 +113,35 @@ class Scanner
           overlap = bspace & ospace
           next unless overlap.length >= minimum
 
-          # our beacon space at zero relative rotation matches
+          # our beacon space at zero absolute rotation overlaps
           # the other beacon space with another rotation.
-          # unrotate the other to get it into our local frame?
 
-          # obs = overlap.map { |o| beacons[bspace.index(o)] }
-          # debug "overlapping beacons absolutely positioned:\n  #{obs.sort.map(&:to_s).join("\n  ")}"
-          debug "matching absolute: #{beacons[bspace.index(overlap.first)]} (#{position} #{rotation})"
+          if num == 1
+            obs = overlap.map { |o| beacons[bspace.index(o)] }
+            debug "overlapping beacons absolutely positioned:\n  #{obs.map(&:to_s).join("\n  ")}"
+          end
+          debug "matching absolute: #{beacons[bspace.index(overlap.first)]} (at #{position} #{rotation})"
 
-          this_beacon = relative_locations[bspace.index(overlap.first)] # relative to our position, zero relative rotation
+          # relative to our position, zero relative rotation
+          this_beacon = relative_locations[bspace.index(overlap.first)]
           debug "this beacon (relative): #{this_beacon}"
+
           # other beacon in relative position (relative and rotated)
           # other_beacon = other.relative_locations[ospace.index(overlap.first)]
           other_beacon = other.relative_locations[ospace.index(overlap.first)]
           debug "other_beacon (relative and rotated): #{other_beacon} #{orotation}"
+
           # unrotate it to get it into our zero relative frame
           other_beacon = other_beacon.unrotate(orotation)
           debug "other_beacon (relative zero rotation): #{other_beacon}"
+
           # now find the (still relative) position based on the difference:
-          pos = this_beacon.zip(other_beacon).map { |t, o| t - o }
+          pos = this_beacon.untranslate(other_beacon)
           debug "pos (relative): #{pos}"
 
-          # untranslate it from this position
-          pos = pos.untranslate(position)
-          debug "pos (untranslated): #{pos}"
-
-          # rotate it into absolute frame:
-          pos = pos.unrotate(rotation)
-          debug "pos (unrotated): #{pos}"
-
-          # debug "other beacon (relative): #{other_beacon} orotation #{orotation}"
-          # other_beacon = other_beacon.unrotate(orotation).untranslate(position).unrotate(rotation)
-          # # debug "other_beacon (relative, unrotated): #{other_beacon}"
-          # debug "pos: #{pos}"
+          # convert relative to beacon to relative to our position
+          pos = pos.translate(position)
+          debug "pos (translated): #{pos}"
           return pos, orotation
         end
       end
@@ -170,11 +165,12 @@ def part1(input, rotations:, minimum:)
   compared = Set.new # don't compare twice!
 
   until to_match.empty?
+    # see if we can match:
+    matched = false
     scanners.select(&:located?).each do |scanner|
-      # see if we can match:
-      matched = false
       to_match.each do |candidate|
         key = [scanner.num, candidate.num]
+
         next if compared.include?(key)
 
         compared << key
@@ -184,25 +180,12 @@ def part1(input, rotations:, minimum:)
         matched = true
         debug "matched #{scanner.num} to #{candidate.num}"
         candidate.locate(pos, rot)
-
-        # if candidate.num == 1
-        #   s = candidate
-        #   debug "s.position: #{s.position}"
-        #   debug "s.rotation: #{s.rotation}"
-        #   s.beacons.each.with_index do |absolute, i|
-        #     relative = s.relative_locations[i]
-        #     rot = relative.rotate(s.rotation)
-        #     translate = rot.zip(s.position).map { |r, p| r + p }
-        #     debug "  #{absolute} (relative: #{relative} -> #{rot} -> #{translate})"
-        #   end
-        #   # debug "s.relative_locations:\n  #{s.relative_locations.map(&:to_s).join("\n  ")}"
-        #   return "debug"
-        # end
-
         to_match.delete(candidate)
       end
       break if matched
     end
+    break unless matched # escape hatch if infinite loop
+
     debug "loop"
   end
 
@@ -371,10 +354,10 @@ EX
 part 1
 with :part1, rotations: TWO_D_ROTATIONS, minimum: 3
 debug!
-# try ex1, 3
+try ex1, 3
 with :part1, rotations: THREE_D_ROTATIONS, minimum: 12
 try ex2, 79
-no_debug!
+# no_debug!
 try puzzle_input
 
 part 2
