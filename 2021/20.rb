@@ -50,7 +50,7 @@ def part1(input, iterations:, cut_border: false, drop_infinite: false)
   draw grid
 
   iterations.times_with_progress(title: "iterating") do |iteration|
-    expand = 9
+    expand = 3
     xmin = grid.keys.min_by(&:first).first - expand
     xmax = grid.keys.max_by(&:first).first + expand
     ymin = grid.keys.min_by(&:last).last - expand
@@ -81,15 +81,15 @@ def part1(input, iterations:, cut_border: false, drop_infinite: false)
     xmax = grid.keys.max_by(&:first).first
     ymin = grid.keys.min_by(&:last).last
     ymax = grid.keys.max_by(&:last).last
-    ymin.upto(ymin + 9) do |y|
+    ymin.upto(ymin + expand) do |y|
       xmin.upto(xmax) { |x| grid[[x, y]] = "x" }
     end
-    ymax.downto(ymax - 8) do |y|
+    ymax.downto(ymax - expand + 1) do |y|
       xmin.upto(xmax) { |x| grid[[x, y]] = "x" }
     end
-    (ymin + 8).upto(ymax - 8) do |y|
-      xmin.upto(xmin + 9) { |x| grid[[x, y]] = "x" }
-      xmax.downto(xmax - 9) { |x| grid[[x, y]] = "x" }
+    (ymin + expand - 1).upto(ymax - expand + 1) do |y|
+      xmin.upto(xmin + expand) { |x| grid[[x, y]] = "x" }
+      xmax.downto(xmax - expand) { |x| grid[[x, y]] = "x" }
     end
 
     # draw grid
