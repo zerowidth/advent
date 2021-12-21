@@ -39,14 +39,14 @@ def part2(input, winning_score:)
   @bar = progress_bar(title: "games")
   @memo = {}
   wins = winners([p1, p2], [0, 0], 0, [], win: winning_score)
+  @bar.finish
   puts "wins: #{wins}"
   wins.max
-ensure
-  @bar.finish
 end
 
-# since the game only iterates every three rolls, we can precalculate the rolls:
-ROLLS = [1, 2, 3].repeated_permutation(3).to_a
+# since the game only iterates every three rolls, we can precalculate the rolls
+# and since the total doesn't change either, we can just use that instead of arrays
+ROLLS = [1, 2, 3].repeated_permutation(3).map(&:sum).to_a
 
 # every time the die rolls, universe splits
 # each turn we split three times, but max score is only 21
@@ -71,7 +71,7 @@ def winners(positions, scores, turn, rolls, win:)
     i = (turn / 3).odd? ? 0 : 1 # which player's turn it is
     pos = positions[i]
     score = scores[i]
-    moves = rolls.last(3).sum
+    moves = rolls
     pos = (((pos - 1) + moves) % 10) + 1
     score += pos
     # debug (" " * turn) + "  player #{i + 1} moves #{moves} to #{pos} for total score #{score}" if debug?
