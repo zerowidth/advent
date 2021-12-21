@@ -45,6 +45,9 @@ ensure
   @bar.finish
 end
 
+# since the game only iterates every three rolls, we can precalculate the rolls:
+ROLLS = [1, 2, 3].repeated_permutation(3).to_a
+
 # every time the die rolls, universe splits
 # each turn we split three times, but max score is only 21
 # each player can only be in one of 10 positions, at most 21 times (but likely a lot less often)
@@ -60,10 +63,10 @@ end
 # memoize on all keys
 def winners(positions, scores, turn, rolls, win:)
   @bar.advance
-  key = [positions, scores, turn, rolls].flatten
+  key = [positions, scores, turn, rolls]
   return @memo[key] if @memo[key]
 
-  debug (" " * turn) + "#{positions} #{scores} on turn #{turn} rolls #{rolls}" if debug?
+  # debug (" " * turn) + "#{positions} #{scores} on turn #{turn} rolls #{rolls}" if debug?
   if turn % 3 == 0 && turn > 0
     i = (turn / 3).odd? ? 0 : 1 # which player's turn it is
     pos = positions[i]
@@ -71,22 +74,21 @@ def winners(positions, scores, turn, rolls, win:)
     moves = rolls.last(3).sum
     pos = (((pos - 1) + moves) % 10) + 1
     score += pos
-    debug (" " * turn) + "  player #{i + 1} moves #{moves} to #{pos} for total score #{score}" if debug?
+    # debug (" " * turn) + "  player #{i + 1} moves #{moves} to #{pos} for total score #{score}" if debug?
     positions = positions.dup
     scores = scores.dup
     positions[i] = pos
     scores[i] = score
 
     if score >= win
-      debug (" " * turn) + "player #{i + 1} wins" if debug?
+      # debug (" " * turn) + "player #{i + 1} wins" if debug?
       return i == 0 ? [1, 0] : [0, 1]
     end
   end
 
-  totals = winners(positions, scores, turn + 1, rolls.last(2) + [1], win: win).zip(
-    winners(positions, scores, turn + 1, rolls.last(2) + [2], win: win),
-    winners(positions, scores, turn + 1, rolls.last(2) + [3], win: win)
-  )
+  totals = ROLLS.map do |next_rolls|
+    winners(positions, scores, turn + 3, next_rolls, win: win)
+  end.transpose
   debug (" " * turn) + "totals #{totals}" if debug?
   @memo[key] = totals.map(&:sum)
 end
