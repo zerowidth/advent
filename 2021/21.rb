@@ -38,7 +38,7 @@ def part2(input, winning_score:)
   # can probably memoize?
   @bar = progress_bar(title: "games")
   @memo = {}
-  wins = winners([p1, p2], [0, 0], 0, [], win: winning_score)
+  wins = winners(p1, p2, 0, 0, 0, 0, win: winning_score)
   @bar.finish
   puts "wins: #{wins}"
   wins.max
@@ -61,33 +61,33 @@ ROLLS = [1, 2, 3].repeated_permutation(3).map(&:sum).to_a
 # and then sum them up
 #
 # memoize on all keys
-def winners(positions, scores, turn, rolls, win:)
+#
+# optimization: instead of each actual turn (mod 3) use p1 = turn.odd? and
+# increment every 3 rolls.
+def winners(p1, p2, s1, s2, turn, rolls, win:)
   @bar.advance
-  key = [positions, scores, turn, rolls]
+  key = [p1, p2, s1, s2, turn, rolls]
   return @memo[key] if @memo[key]
 
-  # debug (" " * turn) + "#{positions} #{scores} on turn #{turn} rolls #{rolls}" if debug?
-  if turn % 3 == 0 && turn > 0
-    i = (turn / 3).odd? ? 0 : 1 # which player's turn it is
-    pos = positions[i]
-    score = scores[i]
+  if turn > 0
+    pos = turn.odd? ? p1 : p2
+    score = turn.odd? ? s1 : s2
     moves = rolls
     pos = (((pos - 1) + moves) % 10) + 1
     score += pos
-    # debug (" " * turn) + "  player #{i + 1} moves #{moves} to #{pos} for total score #{score}" if debug?
-    positions = positions.dup
-    scores = scores.dup
-    positions[i] = pos
-    scores[i] = score
+    return turn.odd? ? [1, 0] : [0, 1] if score >= win
 
-    if score >= win
-      # debug (" " * turn) + "player #{i + 1} wins" if debug?
-      return i == 0 ? [1, 0] : [0, 1]
+    if turn.odd?
+      p1 = pos
+      s1 = score
+    else
+      p2 = pos
+      s2 = score
     end
   end
 
   totals = ROLLS.map do |next_rolls|
-    winners(positions, scores, turn + 3, next_rolls, win: win)
+    winners(p1, p2, s1, s2, turn + 3, next_rolls, win: win)
   end.transpose
   debug (" " * turn) + "totals #{totals}" if debug?
   @memo[key] = totals.map(&:sum)
