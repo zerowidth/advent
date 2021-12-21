@@ -28,7 +28,7 @@ def part1(input)
   players.map(&:last).min * rolled
 end
 
-def part2(input)
+def part2(input, winning_score:)
   p1 = input.lines.first.numbers.last
   p2 = input.lines.last.numbers.last
 
@@ -36,14 +36,13 @@ def part2(input)
   # each turn we split three times, but max score is only 21
   # each player can only be in one of 10 positions, at most 21 times (but likely a lot less often)
   # can probably memoize?
-  multibar = TTY::ProgressBar::Multi.new("playing games :elapsed", frequency: 5)
-  @bar = multibar.register("games :current :rate/sec", frequency: 5)
-  @cache = multibar.register("cache hits :current :rate/sec", frequency: 5)
-  wins = winners([p1, p2], [0, 0], 0, [])
+  @bar = progress_bar(title: "games")
+  @memo = {}
+  wins = winners([p1, p2], [0, 0], 0, [], win: winning_score)
   puts "wins: #{wins}"
   wins.max
 ensure
-  multibar.finish
+  @bar.finish
 end
 
 # every time the die rolls, universe splits
@@ -59,15 +58,10 @@ end
 # and then sum them up
 #
 # memoize on all keys
-@memo = {}
-
-def winners(positions, scores, turn, rolls)
+def winners(positions, scores, turn, rolls, win:)
   @bar.advance
   key = [positions, scores, turn, rolls].flatten
-  if @memo[key]
-    @cache.advance
-    return @memo[key]
-  end
+  return @memo[key] if @memo[key]
 
   debug (" " * turn) + "#{positions} #{scores} on turn #{turn} rolls #{rolls}" if debug?
   if turn % 3 == 0 && turn > 0
@@ -83,15 +77,15 @@ def winners(positions, scores, turn, rolls)
     positions[i] = pos
     scores[i] = score
 
-    if score >= 21
+    if score >= win
       debug (" " * turn) + "player #{i + 1} wins" if debug?
       return i == 0 ? [1, 0] : [0, 1]
     end
   end
 
-  totals = winners(positions, scores, turn + 1, rolls.last(2) + [1]).zip(
-    winners(positions, scores, turn + 1, rolls.last(2) + [2]),
-    winners(positions, scores, turn + 1, rolls.last(2) + [3])
+  totals = winners(positions, scores, turn + 1, rolls.last(2) + [1], win: win).zip(
+    winners(positions, scores, turn + 1, rolls.last(2) + [2], win: win),
+    winners(positions, scores, turn + 1, rolls.last(2) + [3], win: win)
   )
   debug (" " * turn) + "totals #{totals}" if debug?
   @memo[key] = totals.map(&:sum)
@@ -110,8 +104,10 @@ no_debug!
 try puzzle_input
 
 part 2
-with :part2
-# debug!
+with :part2, winning_score: 10
+debug!
+try ex1, 18973591
+with :part2, winning_score: 21
 no_debug!
 try ex1, 444356092776315
 try puzzle_input
