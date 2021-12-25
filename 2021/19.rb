@@ -56,7 +56,7 @@ class Array
     zip(dir).map { |me, d| me + d }
   end
 
-  def untranslate(dir)
+  def sub(dir)
     zip(dir).map { |me, d| me - d }
   end
 end
@@ -98,12 +98,12 @@ class Scanner
     @beacons = @relative_locations.map do |beacon|
       beacon.translate(position)
     end
-    debug "scanner #{num} located at #{position} with rotation #{rotation}".colorize(:yellow)
+    debug { "scanner #{num} located at #{position} with rotation #{rotation}".colorize(:yellow) }
   end
 
   def overlap?(other, minimum:)
     # find first scanner which has an overlapping beacon space with another
-    debug "comparing scanner #{num} to scanner #{other.num}"
+    debug { "comparing scanner #{num} to scanner #{other.num}" }
 
     # used fixed zero relative reference orientation, we can orient the other to match
     # and then locate from there:
@@ -118,30 +118,30 @@ class Scanner
 
           if num == 1
             obs = overlap.map { |o| beacons[bspace.index(o)] }
-            debug "overlapping beacons absolutely positioned:\n  #{obs.map(&:to_s).join("\n  ")}"
+            debug { "overlapping beacons absolutely positioned:\n  #{obs.map(&:to_s).join("\n  ")}" }
           end
-          debug "matching absolute: #{beacons[bspace.index(overlap.first)]} (at #{position} #{rotation})"
+          debug { "matching absolute: #{beacons[bspace.index(overlap.first)]} (at #{position} #{rotation})" }
 
           # relative to our position, zero relative rotation
           this_beacon = relative_locations[bspace.index(overlap.first)]
-          debug "this beacon (relative): #{this_beacon}"
+          debug { "this beacon (relative): #{this_beacon}" }
 
           # other beacon in relative position (relative and rotated)
           # other_beacon = other.relative_locations[ospace.index(overlap.first)]
           other_beacon = other.relative_locations[ospace.index(overlap.first)]
-          debug "other_beacon (relative and rotated): #{other_beacon} #{orotation}"
+          debug { "other_beacon (relative and rotated): #{other_beacon} #{orotation}" }
 
           # unrotate it to get it into our zero relative frame
           other_beacon = other_beacon.unrotate(orotation)
-          debug "other_beacon (relative zero rotation): #{other_beacon}"
+          debug { "other_beacon (relative zero rotation): #{other_beacon}" }
 
           # now find the (still relative) position based on the difference:
-          pos = this_beacon.untranslate(other_beacon)
-          debug "pos (relative): #{pos}"
+          pos = this_beacon.sub(other_beacon)
+          debug { "pos (relative): #{pos}" }
 
           # convert relative to beacon to relative to our position
           pos = pos.translate(position)
-          debug "pos (translated): #{pos}"
+          debug { "pos (translated): #{pos}" }
           return pos, orotation
         end
       end
@@ -186,7 +186,7 @@ def part1(input, rotations:, minimum:)
     end
     break unless matched # escape hatch if infinite loop
 
-    debug "loop"
+    debug { "loop" }
   end
 
   debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"

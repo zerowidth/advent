@@ -7,6 +7,7 @@ require "parser/current"
 
 require "pp"
 require "set"
+require "matrix"
 
 Diffy::Diff.default_format = :color
 
@@ -25,7 +26,13 @@ def no_debug!
 end
 
 def debug(*args)
-  puts(*args) if $debug
+  return unless $debug
+
+  if block_given?
+    puts yield
+  else
+    puts(*args)
+  end
 end
 
 def dpp(*args)
@@ -279,11 +286,19 @@ end
 
 class String
   def digits
-    each_char.map(&:to_i)
+    scan(/\d/).map(&:to_i)
   end
 
   def numbers
     scan(/\d+/).map(&:to_i)
+  end
+
+  def signed_numbers
+    scan(/-?\d+/).map(&:to_i)
+  end
+
+  def words
+    scan(/\w+/)
   end
 
   def number
@@ -305,9 +320,19 @@ class String
   end
 end
 
+class Set
+  def except(*items)
+    self - items
+  end
+end
+
 class Hash
   def self.of
     new { |h, k| h[k] = yield }
+  end
+
+  def self.of_hash
+    of { {} }
   end
 
   def self.of_array
@@ -326,6 +351,10 @@ module Enumerable
 
   def tally_by(&fn)
     group_by(&fn).transform_values(&:size)
+  end
+
+  def of_length(n)
+    select { |v| v.length == n }
   end
 
   def all_combinations(min_length: 1, max_length: length)
