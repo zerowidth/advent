@@ -1,8 +1,14 @@
 require_relative "../toolkit"
 
 TWO_D_ROTATIONS = [
-  # there are no rotations in the 2d example
   Matrix[[1, 0], [0, 1]], # x y
+  Matrix[[1, 0], [0, -1]], # x -y
+  Matrix[[-1, 0], [0, 1]], # -x y
+  Matrix[[-1, 0], [0, -1]], # -x -y
+  Matrix[[0, 1], [1, 0]], # y x
+  Matrix[[0, 1], [-1, 0]], # y -x
+  Matrix[[0, -1], [1, 0]], # -y x
+  Matrix[[0, -1], [-1, 0]], # -y -x
 ]
 
 THREE_D_ROTATIONS = [
@@ -68,17 +74,13 @@ class Scanner
     @num = num
     @relative_locations = relative_locations
     @rotations = rotations
-    calculate_beacon_spaces
-  end
-
-  def calculate_beacon_spaces
     @spaces = Hash.of_array
     @rotations.each do |rotation|
-      rotated = relative_locations.map { |b| b.unrotate(rotation) }
+      rotated = relative_locations.map { |b| b.rotate(rotation) }
       rotated.each do |beacon|
         # store map of rotation matrix to lists of beacons with relative positioning in the new rotated frame
         # TODO are all these needed? lazily calculate? don't need at all?
-        @spaces[rotation] << rotated.map { |other| beacon.zip(other).map { |b, o| o - b } }
+        @spaces[rotation] << rotated.map { |other| other.sub(beacon) }
       end
     end
   end
@@ -90,24 +92,22 @@ class Scanner
   def locate(position, rotation)
     @position = position
     @rotation = rotation
-    # recalculate beacon relative spaces
-    @relative_locations = relative_locations.map { |b| b.unrotate(rotation) }
-    calculate_beacon_spaces
 
     # store beacons absolutely positioned:
     @beacons = @relative_locations.map do |beacon|
-      beacon.translate(position)
+      beacon.rotate(rotation).translate(position)
     end
     debug { "scanner #{num} located at #{position} with rotation #{rotation}".colorize(:yellow) }
   end
 
   def overlap?(other, minimum:)
     # find first scanner which has an overlapping beacon space with another
-    debug { "comparing scanner #{num} to scanner #{other.num}" }
+    debug { "comparing scanner #{num} to scanner #{other.num}".colorize(:blue) }
 
     # used fixed zero relative reference orientation, we can orient the other to match
     # and then locate from there:
     spaces.values.first.each do |bspace|
+      # debug { "  relative_locations:       #{relative_locations}" }
       other.spaces.each do |orotation, ospaces|
         ospaces.each do |ospace|
           overlap = bspace & ospace
@@ -115,33 +115,48 @@ class Scanner
 
           # our beacon space at zero absolute rotation overlaps
           # the other beacon space with another rotation.
+          debug { "  bspace:                   #{bspace.first(minimum)}" }
+          debug { "  ospace:                   #{ospace.first(minimum)}" }
+          debug { "  overlap:                  #{overlap}" }
+          debug { "  orotation:                #{orotation}" }
+          # debug { "  other.relative_locations  #{other.relative_locations}" }
+          # debug { "  other.relative unrotated: #{other.relative_locations.map { |o| o.unrotate(orotation) }}" }
+          # debug do
+            # "  rotated overlap:          #{rotated}"
+          # end
 
-          if num == 1
-            obs = overlap.map { |o| beacons[bspace.index(o)] }
-            debug { "overlapping beacons absolutely positioned:\n  #{obs.map(&:to_s).join("\n  ")}" }
-          end
-          debug { "matching absolute: #{beacons[bspace.index(overlap.first)]} (at #{position} #{rotation})" }
-
-          # relative to our position, zero relative rotation
+          # the first overlapping beacon, relative to this scanner's location/rotation:
           this_beacon = relative_locations[bspace.index(overlap.first)]
-          debug { "this beacon (relative): #{this_beacon}" }
+          debug { "  this beacon (relative):   #{this_beacon}" }
 
-          # other beacon in relative position (relative and rotated)
-          # other_beacon = other.relative_locations[ospace.index(overlap.first)]
-          other_beacon = other.relative_locations[ospace.index(overlap.first)]
-          debug { "other_beacon (relative and rotated): #{other_beacon} #{orotation}" }
+          # the other beacon's relative position in its scanner's zero rotation.
+          # but we know it only matches when rotated to `orotation`
+          other_beacon = other.relative_locations[ospace.index(overlap.first)].rotate(orotation)
+          debug { "  other (relative):         #{other_beacon}" }
 
-          # unrotate it to get it into our zero relative frame
-          other_beacon = other_beacon.unrotate(orotation)
-          debug { "other_beacon (relative zero rotation): #{other_beacon}" }
+          # now find the relative scanner position based on the difference:
+          relative = this_beacon.sub(other_beacon)
+          debug { "  relative pos: #{relative}" }
+          # unrotate to get back to absolute positioning
+          relative = relative.unrotate(rotation)
+          debug { "  relative pos (absolute): #{relative}" }
+          debug { "  position: #{position}" }
 
-          # now find the (still relative) position based on the difference:
-          pos = this_beacon.sub(other_beacon)
-          debug { "pos (relative): #{pos}" }
+          # convert relative distance to absolute:
+          pos = position.translate(relative)
+          debug { "  pos (translated): #{pos}" }
 
-          # convert relative to beacon to relative to our position
-          pos = pos.translate(position)
-          debug { "pos (translated): #{pos}" }
+          # get the final combined rotation for the other scanner
+          orotation = rotation * orotation
+
+          # debugging: grab the (relative) overlapping positions:
+          debug do
+            obs = overlap.map do |o|
+              pos.translate(other.relative_locations[ospace.index(o)].rotate(orotation))
+            end
+            "  overlapping (absolute): #{obs}"
+          end
+
           return pos, orotation
         end
       end
@@ -152,6 +167,37 @@ class Scanner
   def to_s
     "<S #{num}: pos: #{position || "?"} rot: #{rotation || "?"}>"
   end
+end
+
+def overlaps(input)
+  rotations = TWO_D_ROTATIONS
+  scanners = input.sections.with_progress(title: "loading beacons").map.with_index do |section, i|
+    beacons = section.lines.drop(1).map(&:signed_numbers)
+    Scanner.new(i, beacons, rotations: rotations)
+  end
+
+  # debug { "scanners[0].spaces:\n#{scanners[0].spaces.pretty_inspect}" }
+  # debug { "scanners[1].spaces:\n#{scanners[1].spaces.pretty_inspect}" }
+  # debug { "scanners[2].spaces:\n#{scanners[2].spaces.pretty_inspect}" }
+
+  scanners.first.locate([0] * rotations.first.column(0).to_a.length, rotations.first)
+  debug { "scanners[0].beacons: #{scanners[0].beacons}" }
+
+  # this one's easy, it's relative to zero/zero:
+  if (pos, rot = scanners[0].overlap?(scanners[1], minimum: 2))
+    debug { "pos: #{pos} rot: #{rot}" }
+    scanners[1].locate(pos, rot)
+    debug { "  scanners[1].beacons: #{scanners[1].beacons}" }
+  end
+
+  # a rotated scanner matching another, differently-rotated scanner:
+  # this is where the bugs are.
+  if (pos, rot = scanners[1].overlap?(scanners[2], minimum: 2))
+    scanners[2].locate(pos, rot)
+    debug { "  scanners[2].beacons: #{scanners[2].beacons}" }
+  end
+
+  [scanners.map(&:position), scanners.map(&:beacons).reduce(&:&).sort]
 end
 
 def part1(input, rotations:, minimum:)
@@ -185,14 +231,12 @@ def part1(input, rotations:, minimum:)
       break if matched
     end
     break unless matched # escape hatch if infinite loop
-
-    debug { "loop" }
   end
 
   debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
 
   beacons = scanners.flat_map(&:beacons).uniq
-  # debug "beacons:\n#{beacons.sort.map(&:to_s).join("\n")}"
+  debug "beacons:\n  #{beacons.sort.map(&:to_s).join("\n  ")}"
   beacons.length
 end
 
@@ -210,6 +254,23 @@ ex1 = <<EX
 -1,-1
 -5,0
 -2,1
+EX
+
+manual = <<EX
+scanner 0: [0, 0], no rotation
+1,2
+3,3
+4,4
+
+scanner 1: [0, 4] with [y, x]
+-2,1
+-1,3
+0,4
+
+scanner 2: [4, 0] with [-x, y]
+3,2
+1,3
+0,4
 EX
 
 ex2 = <<EX
@@ -352,6 +413,10 @@ ex2 = <<EX
 EX
 
 part 1
+debug!
+
+with :overlaps
+try manual, [[[0, 0], [0, 4], [4, 0]], [[1, 2], [3, 3], [4, 4]]]
 with :part1, rotations: TWO_D_ROTATIONS, minimum: 3
 debug!
 try ex1, 3
@@ -360,9 +425,9 @@ try ex2, 79
 # no_debug!
 try puzzle_input
 
-part 2
-with :part2
-debug!
-try ex1, nil
-no_debug!
-try puzzle_input
+# part 2
+# with :part2
+# debug!
+# try ex1, nil
+# no_debug!
+# try puzzle_input
