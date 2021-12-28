@@ -196,7 +196,7 @@ def overlaps(input)
   [scanners.map(&:position), scanners.map(&:beacons).reduce(&:&).sort]
 end
 
-def part1(input, rotations:, minimum:)
+def locate_scanners(input, rotations:, minimum:)
   scanners = input.sections.with_progress(title: "loading beacons").map.with_index do |section, i|
     beacons = section.lines.drop(1).map(&:signed_numbers)
     Scanner.new(i, beacons, rotations: rotations)
@@ -234,12 +234,20 @@ def part1(input, rotations:, minimum:)
   bar.finish unless debug?
 
   # debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
+  scanners
+end
 
+def part1(input, rotations:, minimum:)
+  scanners = locate_scanners(input, rotations: rotations, minimum: minimum)
   yield scanners
 end
 
-def part2(input)
-  input.lines
+def part2(input, rotations:, minimum:)
+  scanners = locate_scanners(input, rotations: rotations, minimum: minimum)
+  distances = scanners.combination(2).map do |s1, s2|
+    s1.position.sub(s2.position).map(&:abs).sum
+  end
+  distances.max
 end
 
 ex1 = <<EX
@@ -520,9 +528,9 @@ with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
 end
 try puzzle_input
 
-# part 2
-# with :part2
-# debug!
-# try ex1, nil
-# no_debug!
-# try puzzle_input
+part 2
+with :part2, rotations: THREE_D_ROTATIONS, minimum: 12
+debug!
+try ex2, 3621
+no_debug!
+try puzzle_input
