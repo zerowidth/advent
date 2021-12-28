@@ -55,7 +55,7 @@ class Array
   end
 
   def unrotate(rotation)
-    (rotation.transpose * Matrix.column_vector(self)).column(0).to_a
+    rotate(rotation.transpose)
   end
 
   def translate(dir)
@@ -119,22 +119,18 @@ class Scanner
           debug { "  ospace:                   #{ospace.first(minimum)}" }
           debug { "  overlap:                  #{overlap}" }
           debug { "  orotation:                #{orotation}" }
-          # debug { "  other.relative_locations  #{other.relative_locations}" }
-          # debug { "  other.relative unrotated: #{other.relative_locations.map { |o| o.unrotate(orotation) }}" }
-          # debug do
-            # "  rotated overlap:          #{rotated}"
-          # end
 
           # the first overlapping beacon, relative to this scanner's location/rotation:
           this_beacon = relative_locations[bspace.index(overlap.first)]
           debug { "  this beacon (relative):   #{this_beacon}" }
 
           # the other beacon's relative position in its scanner's zero rotation.
-          # but we know it only matches when rotated to `orotation`
+          # but we know it only matches when rotated to `orotation`, so rotate it:
           other_beacon = other.relative_locations[ospace.index(overlap.first)].rotate(orotation)
           debug { "  other (relative):         #{other_beacon}" }
 
-          # now find the relative scanner position based on the difference:
+          # now find the relative scanner position based on the difference,
+          # still in this scanner's rotation:
           relative = this_beacon.sub(other_beacon)
           debug { "  relative pos: #{relative}" }
           # unrotate to get back to absolute positioning
@@ -146,17 +142,21 @@ class Scanner
           pos = position.translate(relative)
           debug { "  pos (translated): #{pos}" }
 
-          # get the final combined rotation for the other scanner
-          orotation = rotation * orotation
-
-          # debugging: grab the (relative) overlapping positions:
           debug do
-            obs = overlap.map do |o|
-              pos.translate(other.relative_locations[ospace.index(o)].rotate(orotation))
-            end
-            "  overlapping (absolute): #{obs}"
+            abso = overlap.map { |o| beacons[bspace.index(o)] }
+            "  overlapping (absolute): #{abso}"
+          end
+          debug do
+            brels = overlap.map { |o| relative_locations[bspace.index(o)] }
+            "  overlapping (in bspace): #{brels}"
+          end
+          debug do
+            orels = overlap.map { |o| other.relative_locations[ospace.index(o)] }
+            "  overlapping (in ospace): #{orels}"
           end
 
+          # get the final combined rotation for the other scanner
+          orotation = orotation.transpose * rotation.transpose
           return pos, orotation
         end
       end
@@ -175,10 +175,6 @@ def overlaps(input)
     beacons = section.lines.drop(1).map(&:signed_numbers)
     Scanner.new(i, beacons, rotations: rotations)
   end
-
-  # debug { "scanners[0].spaces:\n#{scanners[0].spaces.pretty_inspect}" }
-  # debug { "scanners[1].spaces:\n#{scanners[1].spaces.pretty_inspect}" }
-  # debug { "scanners[2].spaces:\n#{scanners[2].spaces.pretty_inspect}" }
 
   scanners.first.locate([0] * rotations.first.column(0).to_a.length, rotations.first)
   debug { "scanners[0].beacons: #{scanners[0].beacons}" }
@@ -210,6 +206,8 @@ def part1(input, rotations:, minimum:)
   to_match = scanners.reject(&:located?)
   compared = Set.new # don't compare twice!
 
+  n = scanners.length
+  bar = progress_bar(title: "matching", total: (n * (n + 1) / 2)) unless debug?
   until to_match.empty?
     # see if we can match:
     matched = false
@@ -219,6 +217,7 @@ def part1(input, rotations:, minimum:)
 
         next if compared.include?(key)
 
+        bar.advance unless debug?
         compared << key
 
         next unless (pos, rot = scanner.overlap?(candidate, minimum: minimum))
@@ -232,12 +231,11 @@ def part1(input, rotations:, minimum:)
     end
     break unless matched # escape hatch if infinite loop
   end
+  bar.finish unless debug?
 
-  debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
+  # debug "scanners:\n#{scanners.map(&:position).pretty_inspect}"
 
-  beacons = scanners.flat_map(&:beacons).uniq
-  debug "beacons:\n  #{beacons.sort.map(&:to_s).join("\n  ")}"
-  beacons.length
+  yield scanners
 end
 
 def part2(input)
@@ -412,17 +410,111 @@ ex2 = <<EX
 30,-46,-14
 EX
 
+ex2beacons = <<EX
+-892,524,684
+-876,649,763
+-838,591,734
+-789,900,-551
+-739,-1745,668
+-706,-3180,-659
+-697,-3072,-689
+-689,845,-530
+-687,-1600,576
+-661,-816,-575
+-654,-3158,-753
+-635,-1737,486
+-631,-672,1502
+-624,-1620,1868
+-620,-3212,371
+-618,-824,-621
+-612,-1695,1788
+-601,-1648,-643
+-584,868,-557
+-537,-823,-458
+-532,-1715,1894
+-518,-1681,-600
+-499,-1607,-770
+-485,-357,347
+-470,-3283,303
+-456,-621,1527
+-447,-329,318
+-430,-3130,366
+-413,-627,1469
+-345,-311,381
+-36,-1284,1171
+-27,-1108,-65
+7,-33,-71
+12,-2351,-103
+26,-1119,1091
+346,-2985,342
+366,-3059,397
+377,-2827,367
+390,-675,-793
+396,-1931,-563
+404,-588,-901
+408,-1815,803
+423,-701,434
+432,-2009,850
+443,580,662
+455,729,728
+456,-540,1869
+459,-707,401
+465,-695,1988
+474,580,667
+496,-1584,1900
+497,-1838,-617
+527,-524,1933
+528,-643,409
+534,-1912,768
+544,-627,-890
+553,345,-567
+564,392,-477
+568,-2007,-577
+605,-1665,1952
+612,-1593,1893
+630,319,-379
+686,-3108,-505
+776,-3184,-501
+846,-3110,-434
+1135,-1161,1235
+1243,-1093,1063
+1660,-552,429
+1693,-557,386
+1735,-437,1738
+1749,-1800,1813
+1772,-405,1572
+1776,-675,371
+1779,-442,1789
+1780,-1548,337
+1786,-1538,337
+1847,-1591,415
+1889,-1729,1762
+1994,-1805,1792
+EX
+
 part 1
 debug!
 
 with :overlaps
 try manual, [[[0, 0], [0, 4], [4, 0]], [[1, 2], [3, 3], [4, 4]]]
-with :part1, rotations: TWO_D_ROTATIONS, minimum: 3
+with :part1, rotations: TWO_D_ROTATIONS, minimum: 3 do |scanners|
+  scanners.flat_map(&:beacons).uniq.length
+end
 debug!
 try ex1, 3
-with :part1, rotations: THREE_D_ROTATIONS, minimum: 12
-try ex2, 79
-# no_debug!
+with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
+  scanners.map(&:position)
+end
+try ex2, [[0, 0, 0], [68, -1246, -43], [1105, -1205, 1229], [-92, -2380, -20], [-20, -1133, 1061]]
+
+with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
+  scanners.flat_map(&:beacons).uniq.sort.map { |b| b.map(&:to_s).join(",") }.join("\n")
+end
+try ex2, ex2beacons
+no_debug!
+with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
+  scanners.flat_map(&:beacons).uniq.length
+end
 try puzzle_input
 
 # part 2
