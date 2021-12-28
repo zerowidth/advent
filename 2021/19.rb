@@ -95,7 +95,7 @@ class Scanner
 
     # store beacons absolutely positioned:
     @beacons = @relative_locations.map do |beacon|
-      beacon.rotate(rotation).translate(position)
+      beacon.unrotate(rotation).translate(position)
     end
     debug { "scanner #{num} located at #{position} with rotation #{rotation}".colorize(:yellow) }
   end
@@ -156,7 +156,7 @@ class Scanner
           end
 
           # get the final combined rotation for the other scanner
-          orotation = orotation.transpose * rotation.transpose
+          orotation = orotation.transpose * rotation
           return pos, orotation
         end
       end
@@ -503,14 +503,17 @@ end
 debug!
 try ex1, 3
 with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
-  scanners.map(&:position)
-end
-try ex2, [[0, 0, 0], [68, -1246, -43], [1105, -1205, 1229], [-92, -2380, -20], [-20, -1133, 1061]]
+  good = Input.new(ex2beacons).lines_of(:signed_numbers).to_set
+  scanners.each_with_index do |s, i|
+    next if s.beacons.to_set.subset?(good)
 
-with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
-  scanners.flat_map(&:beacons).uniq.sort.map { |b| b.map(&:to_s).join(",") }.join("\n")
+    bad = (s.beacons.to_set - good)
+    debug { "scanner #{i} has #{bad.length} bad beacons" }
+  end
+  [scanners.map(&:position), scanners.flat_map(&:beacons).uniq.length]
 end
-try ex2, ex2beacons
+try ex2, [[[0, 0, 0], [68, -1246, -43], [1105, -1205, 1229], [-92, -2380, -20], [-20, -1133, 1061]], 79]
+
 no_debug!
 with :part1, rotations: THREE_D_ROTATIONS, minimum: 12 do |scanners|
   scanners.flat_map(&:beacons).uniq.length
