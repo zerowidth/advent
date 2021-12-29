@@ -2,7 +2,7 @@ require_relative "../toolkit"
 
 def part1(input)
   cubes = {}
-  input.lines.each.with_progress(title: "lines") do |line|
+  input.lines.with_progress(title: "lines").each do |line|
     op = line.words.first
     ns = line.signed_numbers
     next if ns.any? { |n| n.abs > 50 }
@@ -22,17 +22,16 @@ def part1(input)
   cubes.size
 end
 
-class Cube
-  attr_reader :x0, :x1, :y0, :y1, :z0, :z1, :op
+class Region
+  attr_reader :bounds, :op
 
-  def initialize(x0, x1, y0, y1, z0, z1, op)
-    @x0 = x0
-    @x1 = x1
-    @y0 = y0
-    @y1 = y1
-    @z0 = z0
-    @z1 = z1
+  def initialize(bounds, op)
+    @bounds = bounds
     @op = op
+  end
+
+  def on?
+    op == "on"
   end
 
   # line segment a-b and c-d
@@ -46,53 +45,160 @@ class Cube
   #   c---------d    -> :contains
   #
   def segment_overlap?(a, b, c, d)
+    # debug { "segment overlap #{a} #{b} #{c} #{d}" }
     if c < a
-      if d < a
+      if d <= a
         nil
-      elsif d < b
+      elsif d <= b
         :left
       else
         :contains
       end
     elsif c < b
-      if d < b
+      if d <= b
         :inside
       else
         :right
       end
-    else
-      nil
     end
   end
 
   def overlaps?(other)
-    os = [
-      segment_overlap?(x0, x1, other.x0, other.x1),
-      segment_overlap?(y0, y1, other.y0, other.y1),
-      segment_overlap?(z0, z1, other.z0, other.z1)
-    ]
+    os = bounds.each_slice(2).with_index.map do |(a, b), i|
+      c, d = other.bounds[i * 2, 2]
+      segment_overlap?(a, b, c, d)
+    end
     os.any? ? os : nil
   end
 
+  # returns this region split to exclude the other region
+  #
+  # 2D A.exclude(B):
+  #
+  #   A A A A
+  #   A A ABAB B B
+  #   A A ABAB B B
+  #   A A ABAB B B
+  #        B B B B
+  #
+  # splits A into 1 2 3 4, discarding 4
+  #
+  #   1 1 2 2
+  #   3 3 4 4 B B
+  #   3 3 4 4 B B
+  #   3 3 4 4 B B
+  #       B B B B
+  #
+  # and returns 1, 2, 3.
+  def exclude(other)
+    debug { "  #{self} exclude #{other}".colorize(:yellow) }
+    # split on each axis
+    parts = [self]
+    bounds.each_slice(2).with_index do |bs, i|
+      a, b = *bs
+      c, d = other.bounds[i * 2, 2]
+      if (o = segment_overlap?(a, b, c, d))
+        debug { "  overlap on axis #{i}: #{o} (#{a}..#{b} / #{c}..#{d})" }
+        case o
+        when :left
+          parts = parts.flat_map { |p| p.split(i, d) }
+        when :contains
+          parts = parts.flat_map { |p| p.split(i, a) }
+          parts = parts.flat_map { |p| p.split(i, b) }
+        when :inside
+          parts = parts.flat_map { |p| p.split(i, c) }
+          parts = parts.flat_map { |p| p.split(i, d) }
+        when :right
+          parts = parts.flat_map { |p| p.split(i, c) }
+        else
+          raise "wtf overlap #{o.inspect}"
+        end
+      end
+      debug { "    #{parts.map(&:to_s).join("\n    ")}" }
+    end
+
+    parts = parts.reject do |p|
+      if other.overlaps?(p)&.uniq == [:inside]
+        debug { "  dropping #{p}" }
+        true
+      end
+    end
+    debug { parts.empty? ? "    []" : "    #{parts.map(&:to_s).join("\n    ")}" }
+    parts
+  end
+
+  # split on axis at c. 1d: a---c---b -> a---c and c---b
+  # axis is 0-indexed axis
+  def split(axis, where)
+    # debug { "  splitting #{self} on axis #{axis} at #{where}" }
+    a = bounds[axis * 2]
+    b = bounds[(axis * 2) + 1]
+
+    if where <= a || where >= b
+      debug { "  no need to split: #{where} outside #{a..b} " }
+      return [self]
+    end
+
+    left_bounds = bounds.dup
+    left_bounds[(axis * 2) + 1] = where
+    left = Region.new(left_bounds, op)
+    right_bounds = bounds.dup
+    right_bounds[axis * 2] = where
+    right = Region.new(right_bounds, op)
+
+    debug { "  split: #{left} / #{right}" }
+    [left, right]
+  end
+
+  def size
+    bounds.each_slice(2).map { |a, b| (b - a).abs }.reduce(&:*)
+  end
+
   def to_s
-    "<#{op} #{x0}..#{x1} #{y0}..#{y1} #{z0}..#{z1}>"
+    bs = bounds.each_slice(2).map { |a, b| "#{a}..#{b}" }.join(" ")
+    "<#{op} #{bs}>"
+  end
+end
+
+class Space
+  attr_reader :regions
+
+  def initialize
+    @regions = []
+  end
+
+  def insert(region)
+    debug { "inserting region: #{region}" }
+    # for each region this new one overlaps:
+    # split the other region at each overlapping plane
+    # delete the sub-region contained by this one
+    # and keep this new region only if it's an "on" operation
+    # recursively:
+    @regions = regions.flat_map do |existing|
+      if existing.overlaps?(region)
+        existing.exclude(region)
+      else
+        existing
+      end
+    end
+    @regions << region if region.on?
   end
 end
 
 def part2(input)
-  cubes = input.lines.with_progress(title: "lines", total: input.lines.length).map do |line|
-    op = line.words.first
-    Cube.new(*line.signed_numbers, op)
+  space = Space.new
+  input.lines.with_progress(title: "inserting regions", total: input.lines.length).each do |line|
+    bounds = line.signed_numbers.each_slice(2).map do |l, r|
+      [l, r + 1]
+    end.flatten
+    r = Region.new(bounds, line.words.first)
+    space.insert r
   end
 
-  # find all cube intersections
-  cubes.combination(2).each do |a, b|
-    if (os = a.overlaps?(b))
-      debug "os: #{os}"
-    end
-  end
+  debug { "space.regions:\n#{space.regions.pretty_inspect}" }
+  debug { "space.regions.map(&:size): #{space.regions.map(&:size)}" }
 
-  nil
+  space.regions.map(&:size).sum
 end
 
 ex1 = <<EX
@@ -165,6 +271,16 @@ on x=-53470..21291,y=-120233..-33476,z=-44150..38147
 off x=-93533..-4276,y=-16170..68771,z=-104985..-24507
 EX
 
+ex3 = <<EX
+on x=0..9
+on x=5..19
+EX
+
+ex4 = <<EX
+on x=0..9,y=0..9,z=0..9
+on x=0..4,y=0..19,z=0..4
+EX
+
 part 1
 with :part1
 debug!
@@ -175,6 +291,10 @@ try puzzle_input
 part 2
 with :part2
 debug!
+try ex3, 20
+try ex4, (10 * 10 * 10) + (5 * 5 * 10)
+try ex1, 39
+no_debug!
 try ex2, 2758514936282235
 no_debug!
 try puzzle_input
