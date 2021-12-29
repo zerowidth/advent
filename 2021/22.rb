@@ -45,7 +45,6 @@ class Region
   #   c---------d    -> :contains
   #
   def segment_overlap?(a, b, c, d)
-    # debug { "segment overlap #{a} #{b} #{c} #{d}" }
     if c < a
       if d <= a
         nil
@@ -64,11 +63,49 @@ class Region
   end
 
   def overlaps?(other)
-    os = bounds.each_slice(2).with_index.map do |(a, b), i|
+    bounds.each_slice(2).with_index.all? do |(a, b), i|
       c, d = other.bounds[i * 2, 2]
       segment_overlap?(a, b, c, d)
     end
-    os.any? ? os : nil
+  end
+
+  # returns the overlapping region between the two.
+  #
+  # "off" regions aren't added to the full set. they only need to offset/apply to anything they overlap:
+  # "on" <- "on": add an "off" for the overlap to offset double-counting
+  # "on" <- "off": add an "off" to negate the "on"
+  # "off" <- "on": add an "on" to replace the "off"
+  # "off" <- "off": add "on" to counteract double-negative
+  def overlap(other)
+    overlapping = bounds.each_slice(2).with_index.map do |(a, b), i|
+      c, d = other.bounds[i * 2, 2]
+
+      left = right = nil
+      if c < a
+        left = a
+        if d <= a
+          raise "wtf no overlap? #{a} #{b} / #{c} #{d}"
+        elsif d <= b
+          right = d
+        else
+          right = b
+        end
+      elsif c < b
+        left = c
+        if d <= b
+          right = d
+        else
+          right = b
+        end
+      else
+        raise "wtf? #{a} #{b} / #{c} #{d}"
+      end
+
+      [left, right]
+    end.flatten
+
+    op = on? ? "off" : "on"
+    Region.new(overlapping, op)
   end
 
   # returns this region split to exclude the other region
@@ -151,12 +188,13 @@ class Region
   end
 
   def size
-    bounds.each_slice(2).map { |a, b| (b - a).abs }.reduce(&:*)
+    sz = bounds.each_slice(2).map { |a, b| (b - a).abs }.reduce(&:*)
+    on? ? sz : -sz
   end
 
   def to_s
     bs = bounds.each_slice(2).map { |a, b| "#{a}..#{b}" }.join(" ")
-    "<#{op} #{bs}>"
+    "<#{op} #{bs} (#{size})>"
   end
 end
 
@@ -173,10 +211,11 @@ class Space
     # split the other region at each overlapping plane
     # delete the sub-region contained by this one
     # and keep this new region only if it's an "on" operation
-    # recursively:
     @regions = regions.flat_map do |existing|
-      if existing.overlaps?(region)
-        existing.exclude(region)
+      if (os = existing.overlaps?(region))
+        extra = existing.overlap(region)
+        debug { "  overlaps #{existing}: #{os}, adding #{extra.nil? ? "nil" : extra}" }
+        [existing, extra]
       else
         existing
       end
@@ -195,7 +234,7 @@ def part2(input)
     space.insert r
   end
 
-  debug { "space.regions:\n#{space.regions.pretty_inspect}" }
+  debug { "space.regions:\n  #{space.regions.map(&:to_s).join("\n  ")}" }
   debug { "space.regions.map(&:size): #{space.regions.map(&:size)}" }
 
   space.regions.map(&:size).sum
