@@ -43,13 +43,13 @@ class GraphSearch
     raise "must specify neighbors function" unless config.neighbors
   end
 
-  def debug(msg)
-    puts msg if config.debug
+  def debug(msg = nil)
+    puts(msg || yield) if config.debug
   end
 
   # find either a path from start to the goal, or from start to all leaf nodes
-  def path(start:, goal: nil, &leaf)
-    raise "must specify goal or leaf condition" if goal.nil? && leaf.nil?
+  def path(start:, goal: nil, leaf: nil, &goal_condition)
+    raise "must specify goal, goal_condition, or leaf" if goal.nil? && leaf.nil? && goal_condition.nil?
 
     bar = TTY::ProgressBar.new("searching: :current iterations at :rate/sec in :elapsed", frequency: 10) unless config.debug
 
@@ -61,7 +61,7 @@ class GraphSearch
     best = Float::INFINITY
     found = nil
 
-    debug "searching for best path from #{start} to #{goal || "first valid path"}" if config.debug
+    debug { "searching for best path from #{start} to #{goal || "first valid path"}" }
     iterations = 0
     until frontier.empty?
       iterations += 1
@@ -69,7 +69,7 @@ class GraphSearch
 
       current_node = frontier.pop
       current = current_node.position
-      debug "current: #{current_node.position} (cost #{current_node.cost}, priority #{current_node.priority}) cost so far #{cost_so_far[current]}".colorize(:blue) if config.debug
+      debug { "current: #{current_node.position} (cost #{current_node.cost} priority #{current_node.priority}) cost so far #{cost_so_far[current]}".colorize(:blue) }
       # debug "  frontier:"
       # frontier.elements.each do |node|
       #   next unless node
@@ -78,28 +78,34 @@ class GraphSearch
 
       config.each_step&.call start, current, came_from, cost_so_far
 
-      if ((goal && current == goal) || leaf&.call(current)) && cost_so_far[current] < best
-        debug "  => best so far, cost #{cost_so_far[current]}" if config.debug
+      if leaf && (current_node.cost > best)
+        debug { "  skipping, cost #{current_node.cost} greater than best #{best}" }
+        next
+      end
+
+      if ((goal && current == goal) || goal_condition&.call(current) || leaf&.call(current)) && cost_so_far[current] < best
+        debug { "  => best so far, cost #{cost_so_far[current]}".colorize(:green) }
+        puts "  => best so far, cost #{cost_so_far[current]}"
         best = cost_so_far[current]
         found = current
-        break if goal # not really a goal if we're looking for all valid paths
+        break if goal || goal_condition # not really a goal if we're looking for all valid paths
       end
 
       break if config.break_if&.call(cost_so_far[current], best)
 
       neighbors = config.neighbors.call(current)
-      debug "  neighbors:\n  #{neighbors.map(&:to_s).join("\n  ")}" if config.debug
+      debug { "  neighbors:\n  #{neighbors.map(&:to_s).join("\n  ")}" }
       neighbors.each do |neighbor|
         if came_from[current] == neighbor
-          debug "  #{neighbor} skipping, just came from it" if config.debug
+          debug { "  #{neighbor} skipping, just came from it" }
           next
         end
 
         new_cost = cost_so_far[current] + config.cost.call(current, neighbor)
-        debug "    #{neighbor}: new cost #{new_cost}, old #{cost_so_far[neighbor] || "nil"}" if config.debug
+        # debug { "    #{neighbor}: new cost #{new_cost}, old #{cost_so_far[neighbor] || "nil"}" }
         next unless !cost_so_far.key?(neighbor) || new_cost < cost_so_far[neighbor]
 
-        debug "    -> updating, #{neighbor} came from #{current}" if config.debug
+        # debug { "    -> updating, #{neighbor} came from #{current}" }
         cost_so_far[neighbor] = new_cost
         # priority is negative, we want the smallest priority first
         priority = new_cost + config.heuristic[neighbor, goal]
@@ -107,16 +113,16 @@ class GraphSearch
         came_from[neighbor] = current
       end
     end
-    debug "finished in #{iterations} iterations"
+    debug { "finished in #{iterations} iterations" }
 
-    return [reconstruct_path(start, found, came_from), cost_so_far[found]] if found
+    found && [reconstruct_path(start, found, came_from), cost_so_far[found]]
   ensure
     bar.finish unless config.debug
   end
 
   def reconstruct_path(start, current, came_from)
-    # debug "came_from: #{(came_from).pretty_inspect}"
-    # debug "current: #{(current).inspect}"
+    # debug { "came_from: #{(came_from).pretty_inspect}" }
+    # debug { "current: #{(current).inspect}" }
     path = []
     while current != start
       path << current
