@@ -17,10 +17,11 @@ class GraphSearch
   end
 
   class Config
-    attr_accessor :neighbors # given a node, return neighboring nodes
+    attr_accessor :neighbors # given a node, return neighboring nodes. required.
 
     # f(x) = g(x) + h(x), where g(x) is cost, h(x) is heuristic "expected remaining cost"
-    attr_accessor :cost # lambda from node A to node B, returns cost value
+    attr_accessor :cost # lambda from node A to node B, returns cost value. required.
+    # leave heuristic nil for dijkstra
     attr_accessor :heuristic # lambda from a node to a goal, returns estimated remaining cost
 
     attr_accessor :debug # set to true to enable per-step debugging
@@ -50,9 +51,7 @@ class GraphSearch
   def path(start:, goal: nil, &leaf)
     raise "must specify goal or leaf condition" if goal.nil? && leaf.nil?
 
-    unless config.debug
-      bar = TTY::ProgressBar.new("searching: :current iterations at :rate/sec in :elapsed", frequency: 10)
-    end
+    bar = TTY::ProgressBar.new("searching: :current iterations at :rate/sec in :elapsed", frequency: 10) unless config.debug
 
     frontier = PriorityQueue.new
     frontier << Node.new(start, 0, -config.heuristic[start, goal])
@@ -62,7 +61,7 @@ class GraphSearch
     best = Float::INFINITY
     found = nil
 
-    debug "searching for best path from #{start} to #{goal || "first valid path"}"
+    debug "searching for best path from #{start} to #{goal || "first valid path"}" if config.debug
     iterations = 0
     until frontier.empty?
       iterations += 1
@@ -70,7 +69,7 @@ class GraphSearch
 
       current_node = frontier.pop
       current = current_node.position
-      debug "current: #{current_node.position} (cost #{current_node.cost}, priority #{current_node.priority}) cost so far #{cost_so_far[current]}"
+      debug "current: #{current_node.position} (cost #{current_node.cost}, priority #{current_node.priority}) cost so far #{cost_so_far[current]}".colorize(:blue) if config.debug
       # debug "  frontier:"
       # frontier.elements.each do |node|
       #   next unless node
@@ -80,7 +79,7 @@ class GraphSearch
       config.each_step&.call start, current, came_from, cost_so_far
 
       if ((goal && current == goal) || leaf&.call(current)) && cost_so_far[current] < best
-        debug "  => best so far, cost #{cost_so_far[current]}"
+        debug "  => best so far, cost #{cost_so_far[current]}" if config.debug
         best = cost_so_far[current]
         found = current
         break if goal # not really a goal if we're looking for all valid paths
@@ -89,22 +88,23 @@ class GraphSearch
       break if config.break_if&.call(cost_so_far[current], best)
 
       neighbors = config.neighbors.call(current)
-      debug "  neighbors: #{neighbors.inspect}"
+      debug "  neighbors:\n  #{neighbors.map(&:to_s).join("\n  ")}" if config.debug
       neighbors.each do |neighbor|
         if came_from[current] == neighbor
-          debug "  #{neighbor} skipping, just came from it"
+          debug "  #{neighbor} skipping, just came from it" if config.debug
           next
         end
+
         new_cost = cost_so_far[current] + config.cost.call(current, neighbor)
-        debug "    #{neighbor}: new cost #{new_cost}, old #{cost_so_far[neighbor] || "nil"}"
-        if !cost_so_far.key?(neighbor) || new_cost < cost_so_far[neighbor]
-          debug "    -> updating, #{neighbor} came from #{current}"
-          cost_so_far[neighbor] = new_cost
-          # priority is negative, we want the smallest priority first
-          priority = new_cost + config.heuristic[neighbor, goal]
-          frontier << Node.new(neighbor, new_cost, -priority)
-          came_from[neighbor] = current
-        end
+        debug "    #{neighbor}: new cost #{new_cost}, old #{cost_so_far[neighbor] || "nil"}" if config.debug
+        next unless !cost_so_far.key?(neighbor) || new_cost < cost_so_far[neighbor]
+
+        debug "    -> updating, #{neighbor} came from #{current}" if config.debug
+        cost_so_far[neighbor] = new_cost
+        # priority is negative, we want the smallest priority first
+        priority = new_cost + config.heuristic[neighbor, goal]
+        frontier << Node.new(neighbor, new_cost, -priority)
+        came_from[neighbor] = current
       end
     end
     debug "finished in #{iterations} iterations"

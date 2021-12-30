@@ -63,7 +63,6 @@ end
 
 if $PROGRAM_NAME == __FILE__
   require 'minitest/autorun'
-  require_relative 'priority_queue'
 
   class PriorityQueueTest < Minitest::Test
     def setup
