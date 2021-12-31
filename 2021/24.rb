@@ -2,7 +2,8 @@ require_relative "../toolkit"
 
 def monad(input)
   x = y = z = w = i = 0
-  w = input[i]; i += 1
+
+  w = input[0]
   x = x * 0
   x = x + z
   x = x % 26
@@ -20,7 +21,8 @@ def monad(input)
   y = y + 1
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[1]
   x = x * 0
   x = x + z
   x = x % 26
@@ -38,7 +40,8 @@ def monad(input)
   y = y + 10
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[2]
   x = x * 0
   x = x + z
   x = x % 26
@@ -56,7 +59,8 @@ def monad(input)
   y = y + 2
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[3]
   x = x * 0
   x = x + z
   x = x % 26
@@ -74,7 +78,8 @@ def monad(input)
   y = y + 5
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[4]
   x = x * 0
   x = x + z
   x = x % 26
@@ -92,7 +97,8 @@ def monad(input)
   y = y + 6
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[5]
   x = x * 0
   x = x + z
   x = x % 26
@@ -110,7 +116,8 @@ def monad(input)
   y = y + 0
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[6]
   x = x * 0
   x = x + z
   x = x % 26
@@ -128,7 +135,8 @@ def monad(input)
   y = y + 16
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[7]
   x = x * 0
   x = x + z
   x = x % 26
@@ -146,7 +154,8 @@ def monad(input)
   y = y + 12
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[8]
   x = x * 0
   x = x + z
   x = x % 26
@@ -164,7 +173,8 @@ def monad(input)
   y = y + 15
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[9]
   x = x * 0
   x = x + z
   x = x % 26
@@ -182,7 +192,8 @@ def monad(input)
   y = y + 7
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[10]
   x = x * 0
   x = x + z
   x = x % 26
@@ -200,7 +211,8 @@ def monad(input)
   y = y + 6
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[11]
   x = x * 0
   x = x + z
   x = x % 26
@@ -218,7 +230,8 @@ def monad(input)
   y = y + 5
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[12]
   x = x * 0
   x = x + z
   x = x % 26
@@ -236,7 +249,8 @@ def monad(input)
   y = y + 6
   y = y * x
   z = z + y
-  w = input[i]; i += 1
+
+  w = input[13]
   x = x * 0
   x = x + z
   x = x % 26
@@ -254,15 +268,18 @@ def monad(input)
   y = y + 15
   y = y * x
   z = z + y
+
   z
 end
 
 def part1(input)
   code = ["def monad(input)", "x = y = z = w = i = 0"]
+  i = -1
   translated = input.lines.map do |line|
     case line
     when /inp (\w)/
-      "#{$1} = input[i]; i += 1"
+      i += 1
+      "\n#{$1} = input[#{i}]"
     when /add (\w) (-?\d+|\w)/
       "#{$1} = #{$1} + #{$2}"
     when /mul (\w) (-?\d+|\w)/
