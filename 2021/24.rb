@@ -1,102 +1,367 @@
 require_relative "../toolkit"
 
-# def monad(input)
-#   z = 0
+def monad(input)
+  x = y = z = 0
 
-#   z = (z * 26) + input[0] + 1  # could be anything?
-#   z = (z * 26) + input[1] + 10 # could be anything?
-#   z = (z * 26) + input[2] + 2 # (1-9) + 2 has to be 11-19, so this must be 9
+  w = input[0] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 11 # add x 11
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 1 # add y 1
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be between 11-19
-#   z = (z * 26) + input[3] + 5 unless ((z % 26) - 10) == input[3]
+  w = input[1] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 10 # add x 10
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 10 # add y 10
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z = (z * 26) + input[4] + 6 # could be anything?
-#   z = (z * 26) + input[5] + 0 # could be anything?
-#   z = (z * 26) + input[6] + 16 # (1-9) + 16 must be 12-20, so must be 1-4
+  w = input[2] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 13 # add x 13
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 2 # add y 2
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be between 12-20
-#   z = (z * 26) + input[7] + 12 unless ((z % 26) - 11) == input[7]
+  w = input[3] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + -10 # add x -10
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 5 # add y 5
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be between 8-16
-#   z = (z * 26) + input[8] + 15 unless ((z % 26) - 7) == input[8]
+  w = input[4] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 11 # add x 11
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 6 # add y 6
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z = (z * 26) + input[9] + 7 # 1-9 + 7 must be 14-22, so must be 7-9
+  w = input[5] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 11 # add x 11
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 0 # add y 0
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be between 14-22
-#   z = (z * 26) + input[10] + 6 unless ((z % 26) - 13) == input[10]
+  w = input[6] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 12 # add x 12
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 16 # add y 16
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be 1-9
-#   z = (z * 26) + input[11] + 5 unless (z % 26) == input[11]
+  w = input[7] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + -11 # add x -11
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 12 # add y 12
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z /= 26
-#   # digit is 1-9, so z mod 26 must be between 12-20
-#   z = (z * 26) + input[12] + 6 unless ((z % 26) - 11) == input[12]
+  w = input[8] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + -7 # add x -7
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 15 # add y 15
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   # z must be < 26 at this point (it will be?)
-#   z /= 26
-#   # z mod 26 has to match final digit
-#   z = (z * 26) + (input[13] + 15) unless (z % 26) == input[13]
+  w = input[9] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 1 # div z 1
+  x = x + 13 # add x 13
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 7 # add y 7
+  y = y * x # mul y x
+  z = z + y # add z y
 
-#   z
-# end
+  w = input[10] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + -13 # add x -13
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 6 # add y 6
+  y = y * x # mul y x
+  z = z + y # add z y
 
-def valid?(input)
-  # pre-validation:
-  # return nil unless input[0] + 1 == input[13]
-  # return nil unless input[1] + 10 - 11 == input[12]
+  w = input[11] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + 0 # add x 0
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 5 # add y 5
+  y = y * x # mul y x
+  z = z + y # add z y
 
-  z = 0
-  z = (z * 26) + input[0] + 1 # (1-9) + 1 must be 1-9, so 1-8 makes 2-9
-  z = (z * 26) + input[1] + 10 # (1-9) + 10 must be 12-20, so 2-9 makes 12-19
-  z = (z * 26) + input[2] + 2 # (1-9) + 2 must be 11-19, so 9 makes 11
+  w = input[12] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + -11 # add x -11
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 6 # add y 6
+  y = y * x # mul y x
+  z = z + y # add z y
 
-  z /= 26
-  # z mod 26 must be between 11-19: 11 - 10 means this must be 1
-  return nil unless ((z % 26) - 10) == input[3]
-
-  z = (z * 26) + input[4] + 6 # 7-15, must be 1-9 so must be 1-3 makes 7-9
-  z = (z * 26) + input[5] + 0 # 8-16, must be 8-9
-  z = (z * 26) + input[6] + 16 # (1-9) + 16 must be 12-20, so must be 1-4
-
-  z /= 26
-  # z mod 26 must be between 12-20: 1-4 + (16 - 11) = 6-9
-  return nil unless ((z % 26) - 11) == input[7]
-
-  z /= 26
-  # z mod 26 must be between 8-16: thus, 8-9
-  return nil unless ((z % 26) - 7) == input[8]
-
-  z = (z * 26) + input[9] + 7 # 1-9 + 7 must be 14-22, so must be 7-9
-
-  z /= 26
-  # z mod 26 must be between 14-22: from input 9: 14-16 - 13 is 1-3
-  return nil unless ((z % 26) - 13) == input[10]
-
-  z /= 26
-  # z mod 26 must be 1-9: (from input 4) is 7-9
-  return nil unless (z % 26) == input[11]
-
-  z /= 26
-  # z mod 26 must be between 12-20: input 1 is 12-19 - 11: 1-8
-  return nil unless ((z % 26) - 11) == input[12]
-
-  z /= 26
-  # z mod 26 must be 1-9, (1-9) + 1 means this must be 2-9
-  return nil unless (z % 26) == input[13]
-
-  z == 0
+  w = input[13] # inp w
+  x = x * 0 # mul x 0
+  x = x + z # add x z
+  x = x % 26 # mod x 26
+  z = z / 26 # div z 26
+  x = x + 0 # add x 0
+  x = x == w ? 1 : 0 # eql x w
+  x = x == 0 ? 1 : 0 # eql x 0
+  y = y * 0 # mul y 0
+  y = y + 25 # add y 25
+  y = y * x # mul y x
+  y = y + 1 # add y 1
+  z = z * y # mul z y
+  y = y * 0 # mul y 0
+  y = y + w # add y w
+  y = y + 15 # add y 15
+  y = y * x # mul y x
+  z = z + y # add z y
+  z
 end
 
-def choices(inputs)
-  inputs[0].product(*inputs[1..])
+def valid?(input)
+  z = 0
+  z = (z * 26) + input[0] + 1
+  # z = i0 + 1
+
+  z = (z * 26) + input[1] + 10
+  # z = (i0 + 1) * 26 + i1 + 10
+
+  z = (z * 26) + input[2] + 2
+  # z = ((i0 + 1) * 26 + i1 + 10) * 26 + i2 + 2
+
+  x = (z % 26) - 10
+  # x = i2 + 2 - 10
+  z /= 26
+  # z = (i0 + 1) * 26 + i1 + 10
+  return nil unless x == input[3]
+
+  z = (z * 26) + input[4] + 6
+  # z = ((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6
+
+  z = (z * 26) + input[5] + 0
+  # z = (((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6) * 26 + i5 + 0
+
+  z = (z * 26) + input[6] + 16
+  # z = ((((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6) * 26 + i5 + 0) * 26 + i6 + 16
+
+  x = (z % 26) - 11
+  # x = i6 + 16 - 11
+  z /= 26
+  # z = (((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6) * 26 + i5 + 0
+  return nil unless x == input[7]
+
+  x = (z % 26) + 7
+  # x = i5 + 0 + 7
+  z /= 26
+  # z = ((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6
+  return nil unless x == input[8]
+
+  z = (z * 26) + input[9] + 7
+  # z = (((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6) * 26 + i9 + 7
+
+  x = (z % 26) - 13
+  # x = i9 + 7 - 13
+  z /= 26
+  # z = ((i0 + 1) * 26 + i1 + 10) * 26 + i4 + 6
+  return nil unless x == input[10]
+
+  x = (z % 26) + 0
+  # x = i4 + 6
+  z /= 26
+  # z = (i0 + 1) * 26 + i1 + 10
+  return nil unless x == input[11]
+
+  x = (z % 26) - 11
+  # x = i1 + 10
+  z /= 26
+  # z = i0 + 1
+  return nil unless x == input[12]
+
+  x = (z % 26) + 0
+  # x = i0 + 1
+  z /= 26
+  # z = 0
+  return nil unless x == input[13]
+
+  z
 end
 
 def part1(input)
+  debug { "z = 0" }
+  input.split("inp w").drop(1).map { |s| Input.new(s.strip).lines }.each_with_index do |lines, i|
+    case lines[3]
+    when "div z 1" # multiplying z
+      # find out how much we're adding
+      adding = lines[14].signed_numbers.first
+      debug { "z = (z * 26) + input[#{i}] + #{adding}" }
+    when "div z 26" # reducing z
+      subtracting = lines[4].signed_numbers.first
+      debug do
+        sub = subtracting < 0 ? "- #{subtracting.abs}" : "+ #{subtracting}"
+        "x = (z % 26) #{sub}\nz /= 26\nreturn nil unless x == input[#{i}]"
+      end
+    else
+      raise "wtf: #{lines[3]}"
+    end
+    debug
+  end
+  debug { "z" }
+end
+
+def part1_manual(input)
   code = translate(input)
   puts "-" * 10
   puts code.join("\n")
@@ -143,23 +408,23 @@ def part1(input)
 end
 
 def translate(input)
-  code = ["def monad(input)", "x = y = z = w = i = 0"]
+  code = ["def monad(input)", "x = y = z = w = 0"]
   i = -1
   translated = input.lines.map do |line|
     case line
     when /inp (\w)/
       i += 1
-      "\n#{$1} = input[#{i}]"
+      "\n#{$1} = input[#{i}] # #{line}"
     when /add (\w) (-?\d+|\w)/
-      "#{$1} = #{$1} + #{$2}"
+      "#{$1} = #{$1} + #{$2} # #{line}"
     when /mul (\w) (-?\d+|\w)/
-      "#{$1} = #{$1} * #{$2}"
+      "#{$1} = #{$1} * #{$2} # #{line}"
     when /div (\w) (-?\d+|\w)/
-      "#{$1} = #{$1} / #{$2}"
+      "#{$1} = #{$1} / #{$2} # #{line}"
     when /mod (\w) (-?\d+|\w)/
-      "#{$1} = #{$1} % #{$2}"
+      "#{$1} = #{$1} % #{$2} # #{line}"
     when /eql (\w) (-?\d+|\w)/
-      "#{$1} = #{$1} == #{$2} ? 1 : 0"
+      "#{$1} = #{$1} == #{$2} ? 1 : 0 # #{line}"
     else
       raise "what #{line}"
     end
@@ -175,7 +440,8 @@ end
 
 part 1
 with :part1
-no_debug!
+debug!
+# no_debug!
 try puzzle_input
 
 # part 2
