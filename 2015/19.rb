@@ -14,8 +14,8 @@ HOH
 EX
 
 def part1(input)
-  rules, input = input.split("\n\n", 2)
-  rules = rules.split("\n").each_with_object({}) do |rule, hash|
+  rules, input = input.sections
+  rules = rules.lines.each_with_object({}) do |rule, hash|
     k, v = rule.strip.split(" => ", 2)
     hash[k] ||= []
     hash[k] << v
@@ -80,7 +80,9 @@ class Earley
 
     include Comparable
     def <=>(other)
-      o = other ? [other.lhs, other.rhs, other.dot, other.from, other.to] : nil
+      return nil if other.nil?
+
+      o = [other.lhs, other.rhs, other.dot, other.from, other.to]
       [lhs, rhs, dot, from, to] <=> o
     end
   end
@@ -118,18 +120,18 @@ class Earley
       state_set[0] << Item.new(starting_production, rhs, 0, 0, 0)
     end
 
-    state_set.each.with_index do |set, pos|
+    state_set.with_progress(title: "state sets", length: true).each.with_index do |set, pos|
       debug "--- S(#{pos}) ---"
       i = 0
       while (item = set[i])
-        debug item
+        debug item if debug?
         if item.complete? # completion
           # debug "  completing #{item} at S(#{item.start})?"
           state_set[item.from].each do |start_item|
             if start_item.next == item.lhs
               completed = Item.new(start_item.lhs, start_item.rhs, start_item.dot + 1, start_item.from, pos)
               unless set.include?(completed)
-                debug "  complete: #{item} : #{start_item} => #{completed}"
+                debug "  complete: #{item} : #{start_item} => #{completed}" if debug?
                 set << completed
               end
             end
@@ -145,7 +147,7 @@ class Earley
         rules.fetch(item.next, []).each do |rhs|
           next_item = Item.new(item.next, rhs, 0, pos, pos)
           skip = set.include?(next_item)
-          debug "  predict: #{item.next} => #{next_item}#{" (skip)" if skip}" unless skip
+          debug "  predict: #{item.next} => #{next_item}#{" (skip)" if skip}"
           set << next_item unless skip
         end
 
@@ -154,7 +156,7 @@ class Earley
         if input[pos] == item.next
           next_item = Item.new(item.lhs, item.rhs, item.dot + 1, item.from, pos + 1)
           skip = state_set[pos + 1].include?(next_item)
-          debug "  scan: #{item.next} => #{next_item}#{" (skip)" if skip}" unless skip
+          debug "  scan: #{item.next} => #{next_item}#{" (skip)" if skip}"
           state_set[pos + 1] << next_item unless skip
         end
 

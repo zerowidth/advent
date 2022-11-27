@@ -219,7 +219,6 @@ end
 
 def part1_matrix(input)
   recipe = recipe_rows input
-  require "pp"
   row_indices = recipe.map { |row| row.map(&:first).flatten }.flatten.uniq
   rows = Array.new(row_indices.size) { [] }
   recipe.each do |row|
@@ -238,7 +237,6 @@ def part1_matrix(input)
   matrix = Matrix.rows(rows)
   STDERR.puts "matrix: #{(matrix)}"
   STDERR.puts "det: #{matrix.lup.det}"
-  # require "pp"
   # STDERR.puts "rows: #{(rows).pretty_inspect}"
   # STDERR.puts "recipe: #{(recipe).pretty_inspect}"
   nil

@@ -6,7 +6,7 @@ require "net/http"
 require "pathname"
 require "pty"
 
-task default: %w[latest]
+task default: %w[watch]
 
 def year
   now = Time.now
@@ -15,7 +15,7 @@ def year
   else
     now.year.to_i - 1
   end
-  ENV.fetch("year", default.to_s)
+  ENV.fetch("YEAR", default.to_s)
 end
 
 def root

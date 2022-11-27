@@ -39,20 +39,20 @@ def part2(input)
     signals = signals.map(&:chars).map(&:to_set)
     outputs = outputs.map(&:chars)
 
-    twos = signals.detect { |s| s.length == 2 }
+    twos = signals.of_length(2).first
 
     # only 7 has three
     seg_a = signals.detect { |s| s.length == 3 } - twos
     debug "seg_a: #{seg_a}"
 
     # only 6 doesn't match the signals from 1 and seg_c
-    seg_f = signals.detect { |s| s.length == 6 && !twos.subset?(s) } & twos
+    seg_f = signals.of_length(6).detect { |s| !twos.subset?(s) } & twos
     debug "seg_f: #{seg_f}"
     seg_c = twos - seg_f
     debug "seg_c: #{seg_c}"
 
-    fives = signals.select { |s| s.length == 5 }.reduce(&:&)
-    sixes = signals.select { |s| s.length == 6 }.reduce(&:&)
+    fives = signals.of_length(5).reduce(&:&)
+    sixes = signals.of_length(6).reduce(&:&)
     seg_g = (fives & sixes) - seg_a
     debug "seg_g: #{seg_g}"
 
@@ -62,7 +62,7 @@ def part2(input)
     seg_b = sixes - seg_a - seg_f - seg_g
     debug "seg_b: #{seg_b}"
 
-    seg_e = signals.detect { |s| s.length == 7 } - seg_a - seg_b - seg_c - seg_d - seg_f - seg_g
+    seg_e = signals.of_length(7).first - seg_a - seg_b - seg_c - seg_d - seg_f - seg_g
     debug "seg_e: #{seg_e}"
 
     mapping = {
@@ -109,6 +109,6 @@ part 2
 with :part2
 debug!
 try ex1, 5353
-try ex2, 61229
 no_debug!
+try ex2, 61229
 try puzzle_input

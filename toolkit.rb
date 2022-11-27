@@ -39,6 +39,7 @@ def dpp(*args)
   pp(*args) if $debug
 end
 
+# Print a "part n" header for visual output scanning
 def part(n)
   puts if n > 1
   puts((("*" * 30) + " part #{n} " + ("*" * 30)).colorize(:blue))
@@ -61,7 +62,7 @@ def with(sym, *args, **kwargs, &block)
   @block = block
 end
 
-# try an input with the configured `with` method
+# Try an input with the configured `with` method
 #
 # If the input is not a PuzzleInput, an expected value is required.
 #

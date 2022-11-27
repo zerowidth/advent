@@ -1,9 +1,10 @@
 # infinite grid, using "raw" x/y coords
 class SimpleGrid
-
-  # cost function
-  def self.taxicab(from, to)
-    from.map(&:abs).zip(to.map(&:abs)).map(&:sum).sum
+  class << self
+    def taxicab(from, to)
+      from.map(&:abs).zip(to.map(&:abs)).map(&:sum).sum
+    end
+    alias manhattan taxicab
   end
 
   def initialize(&value_block)
