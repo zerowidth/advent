@@ -17,6 +17,15 @@ class DirEntry < Node
     @parent = parent
   end
 
+  include Enumerable
+  def each
+    stack = [self]
+    while (dir = stack.pop)
+      yield dir
+      stack.concat dir.dirs
+    end
+  end
+
   def path
     p = [name]
     n = self
@@ -73,13 +82,7 @@ end
 
 def part1(input)
   root = read_dirs(input)
-  found = []
-  stack = [root]
-  while (dir = stack.pop)
-    found << dir if dir.size < 100000
-    stack.concat dir.dirs
-  end
-  found.map(&:size).sum
+  root.select { |dir| dir.size < 100000 }.map(&:size).sum
 end
 
 def part2(input)
@@ -89,14 +92,7 @@ def part2(input)
   unused = available_disk - root.size
   to_free = min_unused - unused
 
-  found = []
-  stack = [root]
-  while (dir = stack.pop)
-    found << dir if dir.size > to_free
-    stack.concat dir.dirs
-  end
-
-  found.map(&:size).min
+  root.select { |dir| dir.size >= to_free }.map(&:size).min
 end
 
 ex1 = <<EX
