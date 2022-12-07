@@ -241,7 +241,8 @@ class Integer
       g, a, b = gcdext(-y)
       return [g, a, -b]
     end
-    r0, r1 = self, y
+    r0 = self
+    r1 = y
     a0 = b1 = 1
     a1 = b0 = 0
     until r1.zero?
@@ -382,7 +383,7 @@ module Enumerable
 
   def safe_zip(*others)
     ([self] + others).any? { |enum| enum.size && enum.size < Float::INFINITY } or
-      raise ArgumentError, "all enumerators in safe_size are infinite"
+      raise ArgumentError, "all enumerators in safe_zip are infinite"
     Enumerator.new do |y|
       lazy.zip(*others).each do |vs|
         break if vs.any?(&:nil?)
