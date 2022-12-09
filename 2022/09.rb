@@ -7,15 +7,16 @@ DIRS = {
   "D" => [0, -1]
 }
 
-def draw(head, tail, visited)
+def draw(positions, visited)
   return unless debug?
   points = {}
   visited.each do |point|
     points[point] = "#"
   end
   points[[0, 0]] = "s"
-  points[tail] = "T"
-  points[head] = "H"
+  positions.each do |knot, point|
+    points[point] = knot
+  end
   min_x = points.keys.map(&:first).min
   max_x = points.keys.map(&:first).max
   min_y = points.keys.map(&:last).min
@@ -29,52 +30,74 @@ def draw(head, tail, visited)
   puts
 end
 
-def part1(input)
+def resolve(head, tail)
+  head = head.dup
+  new_tail = tail.dup
+  dx = head[0] - tail[0]
+  dy = head[1] - tail[1]
+
+  # both need to move diagonal
+  if dx.abs > 1 && dy.abs > 1
+    new_tail[0] += (dx / dx.abs)
+    new_tail[1] += (dy / dy.abs)
+  elsif dx.abs > 1 && dy != 0
+    new_tail[1] += dy
+  elsif dy.abs > 1 && dx != 0
+    new_tail[0] += dx
+  end
+
+  if head[1] - new_tail[1] > 1
+    new_tail[1] += 1
+  elsif head[1] - new_tail[1] < -1
+    new_tail[1] -= 1
+  end
+  if head[0] - new_tail[0] > 1
+    new_tail[0] += 1
+  elsif head[0] - new_tail[0] < -1
+    new_tail[0] -= 1
+  end
+
+  # debug "    #{tail} to #{head} (#{dx}, #{dy}) -> #{new_tail}"
+  new_tail
+end
+
+def tail_visits(knots, instructions)
   visited = Set.new([[0, 0]])
-  head = [0, 0]
-  tail = [0, 0]
-  input.lines.each do |instr|
+  positions = {}
+  knots.each do |knot|
+    positions[knot] = [0, 0]
+  end
+
+  instructions.each do |instr|
     debug "--- #{instr} ---"
     dir, dist = instr.split(" ")
     dist = dist.to_i
 
     dist.times do
       delta = DIRS.fetch(dir)
-      head = [head[0] + delta[0], head[1] + delta[1]]
-      # now, resolve where the tail needs to go
-      # start with the minimum distance first, then the other
-      dx = head[0] - tail[0]
-      dy = head[1] - tail[1]
-
-      if dx.abs > 1 && dy != 0
-        # debug "  DY dx #{dx} dy #{dy}"
-        tail[1] += dy
-      elsif dy.abs > 1 && dx != 0
-        # debug "  DX dx #{dx} dy #{dy}"
-        tail[0] += dx
+      head = positions[knots.first]
+      positions[knots.first] = [head[0] + delta[0], head[1] + delta[1]]
+      knots.each_cons(2) do |k1, k2|
+        debug "  #{k2} -> #{k1}"
+        positions[k2] = resolve positions[k1].dup, positions[k2].dup
       end
 
-      if head[1] - tail[1] > 1
-        tail[1] += 1
-      elsif head[1] - tail[1] < -1
-        tail[1] -= 1
-      end
-      if head[0] - tail[0] > 1
-        tail[0] += 1
-      elsif head[0] - tail[0] < -1
-        tail[0] -= 1
-      end
-
-      visited << tail.dup # omfg
-      # debug "  #{head} #{tail}"
-      draw head, tail, visited
+      visited << positions[knots.last].dup
+      draw positions, visited
     end
   end
+
+  visited
+end
+
+def part1(input)
+  visited = tail_visits %w[H T], input.lines
   visited.size
 end
 
 def part2(input)
-  input.lines
+  visited = tail_visits %w[H 1 2 3 4 5 6 7 8 9], input.lines
+  visited.size
 end
 
 ex1 = <<EX
@@ -109,6 +132,7 @@ try puzzle_input
 part 2
 with :part2
 debug!
-try ex1, nil
+try ex1, 1
+try ex2, 36
 no_debug!
 try puzzle_input
