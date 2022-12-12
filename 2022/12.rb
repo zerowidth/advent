@@ -12,8 +12,10 @@ def parse(input)
   grid
 end
 
-def search(grid)
-  GraphSearch.new do |config|
+def part1(input)
+  grid = parse(input)
+
+  search = GraphSearch.new do |config|
     config.debug = debug?
     config.neighbors = lambda do |(x, y)|
       current = grid.at(x, y)
@@ -21,20 +23,14 @@ def search(grid)
       grid.adjacent_points(x, y, diagonal: false).select do |cx, cy|
         value = grid.at(cx, cy)
         next unless value
-
         value = "z" if value == "E"
         value = "a" if value == "S"
-
         value.ord - current.ord <= 1
       end
     end
   end
-end
 
-def part1(input)
-  grid = parse(input)
-
-  search(grid).path(
+  search.path(
     start: grid.locate("S").first,
     goal: grid.locate("E").first
   ).tap do |path|
@@ -45,17 +41,27 @@ end
 def part2(input)
   grid = parse(input)
 
-  s = search(grid)
-  e = grid.locate("E").first
-  paths = grid.locate("S").concat(grid.locate("a")).map do |start|
-    path = s.path(start: start, goal: e)
-    if path
-      debug "start at #{grid.at(*start)}: #{path.first.length}"
+  search = GraphSearch.new do |config|
+    config.debug = debug?
+    config.neighbors = lambda do |(x, y)|
+      current = grid.at(x, y)
+      current = "a" if current == "S"
+      current = "z" if current == "E"
+      grid.adjacent_points(x, y, diagonal: false).select do |cx, cy|
+        value = grid.at(cx, cy)
+        next unless value
+        value = "z" if value == "E"
+        value = "a" if value == "S"
+        (value.ord - current.ord) >= -1
+      end
     end
-    path
   end
 
-  paths.compact.map(&:first).map(&:length).sort.first
+  path = search.path(start: grid.locate("E").first) do |x, y|
+    grid.at(x, y) == "S" || grid.at(x, y) == "a"
+  end
+
+  path&.first&.length
 end
 
 ex1 = <<EX
