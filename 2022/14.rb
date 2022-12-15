@@ -51,32 +51,21 @@ end
 
 def part2(input)
   grid = parse(input)
-  max_y = grid.each.map { |_, y, _| y }.max + 1
+  floor = grid.each.map { |_, y, _| y }.max + 2
 
-  loop do
-    sand = [500, 0]
-    loop do
-      if grid[sand[0], sand[1] + 1].nil?
-        sand[1] += 1
-      elsif grid[sand[0] - 1, sand[1] + 1].nil?
-        sand[0] -= 1
-        sand[1] += 1
-      elsif grid[sand[0] + 1, sand[1] + 1].nil?
-        sand[0] += 1
-        sand[1] += 1
-      else
-        break
-      end
+  to_fill = [[500, 0]]
+  while (fill = to_fill.shift)
+    next unless grid[*fill].nil?
+    next if fill[1] == floor
 
-      break if sand[1] == max_y
-    end
+    to_fill << [fill[0], fill[1] + 1]
+    to_fill << [fill[0] - 1, fill[1] + 1]
+    to_fill << [fill[0] + 1, fill[1] + 1]
 
-    grid.set(*sand, "o") if grid.get(*sand).nil?
+    grid[*fill] = "o"
 
     debug
     debug grid
-
-    break if sand == [500, 0]
   end
 
   grid.count { |_, _, v| v == "o" }
