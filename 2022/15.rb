@@ -20,19 +20,27 @@ class Sensor
     @dy ||= (@by - @sy).abs
   end
 
+  def xmin
+    @xmin ||= @sx - dist
+  end
+
+  def xmax
+    @xmax ||= @sx + dist
+  end
+
+  def ymin
+    @ymin ||= @sy - dist
+  end
+
+  def ymax
+    @ymax ||= @sy + dist
+  end
+
   def range(y)
     # debug "range at y=#{y} for [#{@sx}, #{@sy}]->[#{@bx}, #{@by}] (dx=#{dx}, dy=#{dy} = #{dx + dy})"
-    distance_to_sensor = (y - @sy).abs
-    # debug "  distance_to_sensor = #{distance_to_sensor}"
-    return nil if distance_to_sensor > dist
-    delta_x = dist - distance_to_sensor
-    # debug "  delta_x = #{delta_x}"
-    return nil if delta_x < 0
-    min_x = @sx - delta_x
-    max_x = @sx + delta_x
-    (min_x..max_x) # .tap do |range|
-    # debug "  range = #{range}"
-    # end
+    return nil unless y >= ymin && y <= ymax
+    diff = (y - @sy).abs
+    [xmin + diff, xmax - diff]
   end
 end
 
@@ -40,7 +48,7 @@ def part1(input, y:)
   positions = input.lines.map(&:signed_numbers)
   beacons = positions.map { |_, _, bx, by| [bx, by] }
   sensors = positions.map { |p| Sensor.new(*p) }
-  ranges = sensors.map { |s| s.range(y) }.compact
+  ranges = sensors.map { |s| s.range(y) }.compact.map { |r| Range.new(*r) }
   debug "ranges: #{ranges}"
   x_positions = ranges.flat_map(&:entries).uniq
   (x_positions - beacons.select { |_, by| by == y }.map(&:first)).count
@@ -51,14 +59,14 @@ def part2(input, x_max:, y_max:)
   beacons = positions.map { |_, _, bx, by| [bx, by] }
   sensors = positions.map { |p| Sensor.new(*p) }
   coords = y_max.times_with_progress do |y|
-    debug "searching y=#{y}"
-    ranges = sensors.map { |s| s.range(y) }.compact.sort_by(&:min)
-    debug "ranges: #{ranges}"
+    # debug "searching y=#{y}"
+    ranges = sensors.map { |s| s.range(y) }.compact.sort_by(&:first)
+    # debug "ranges: #{ranges}"
     found = nil
     x = 0
     while x <= x_max
       # debug "x is now #{x}"
-      next_x = ranges.select { |r| r.include?(x) }.map(&:max).max
+      next_x = ranges.select { |left, right| x >= left && x <= right }.map(&:last).max
       # debug "next x #{next_x}"
       if next_x
         x = next_x + 1
