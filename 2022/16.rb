@@ -113,11 +113,22 @@ end
 def part2(input)
   edges, rates, costs, to_open = preprocess(input)
 
+  # some analysis:
+  to_open = to_open.to_a
+  debug "to open: #{to_open}"
+  to_check = 0
+  permutations = {}
+  to_open.all_combinations.each do |combo|
+    to_check += combo.size.factorial
+    to_check += (to_open.length - combo.size).factorial
+  end
+  puts "total number: #{to_check}"
+  return nil
+
   stack = [P2State.new([Location.new("AA", 26), Location.new("AA", 26)], Set.new, 0)]
   best = nil
   n = 0
-  skipped = 0
-  seen = Set.new
+
   while (node = stack.shift)
     node_id = node.id
     if seen.include?(node_id)
@@ -171,16 +182,16 @@ Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II
 EX
 
-part 1
-with :part1
-debug!
-try ex1, 1651
-no_debug!
-try puzzle_input
+# part 1
+# with :part1
+# debug!
+# try ex1, 1651
+# no_debug!
+# try puzzle_input
 
 part 2
 with :part2
 debug!
-try ex1, 1707
-no_debug!
+# try ex1, 1707
+# no_debug!
 try puzzle_input
