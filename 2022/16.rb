@@ -1,10 +1,6 @@
 require_relative "../toolkit"
 
-State = Struct.new(:location, :time_remaining, :open_valves, :total_flow, :path) do
-  def id
-    "#{location}-#{time_remaining}-#{open_valves.sort.join(",")}-#{total_flow}"
-  end
-end
+State = Struct.new(:location, :time_remaining, :open_valves, :total_flow, :path)
 
 def preprocess(input)
   edges = {}
@@ -55,14 +51,12 @@ end
 def part1(input)
   edges, rates, costs, to_open = preprocess(input)
 
-  uniques = Hash.new(0)
   stack = [State.new("AA", 30, Set.new, 0, [])]
   best = nil
   n = 0
   while (node = stack.shift)
     n += 1
     debug "n #{n} stack #{stack.size} current #{node}" if n % 10000 == 0
-    uniques[node.id] += 1
     # debug "node: #{node}"
 
     # are we out of time or is everything on?
@@ -93,14 +87,55 @@ def part1(input)
     end
   end
 
-  # for general dynamic programming info: can we save work by reusing state? seems like no.
-  puts "uniques: #{uniques.size} #{uniques.values.sum}"
+  puts "found in #{n} iterations: #{best}"
 
   best&.total_flow
 end
 
+Location = Struct.new(:position, :time_remaining, :path) do
+  def move_to(new_position, cost)
+    self.class.new(new_position, time_remaining - cost, path + [new_position])
+  end
+end
+
+P2State = Struct.new(:locations, :open_valves, :total_flow)
+
 def part2(input)
-  input.lines
+  edges, rates, costs, to_open = preprocess(input)
+
+  stack = [P2State.new([Location.new("AA", 30, [])], Set.new, 0)]
+  best = nil
+  n = 0
+  while (node = stack.shift)
+    n += 1
+    debug "n #{n} stack #{stack.size} current #{node}" if n % 10000 == 0
+    # debug "node: #{node}"
+
+    still_closed = to_open - node.open_valves
+    if node.locations.all? { |loc| loc.time_remaining <= 0 } || still_closed.empty?
+      if node.total_flow > (best&.total_flow || 0)
+        debug "best so far: #{node}"
+        best = node
+      end
+      next
+    end
+
+    node.locations.each.with_index do |loc, i|
+      next if loc.time_remaining <= 0
+
+      still_closed.each do |next_location|
+        cost = costs.fetch(loc.position).fetch(next_location) + 1 # move and open
+        time_remaining = loc.time_remaining - cost
+        locations = node.locations.dup
+        locations[i] = loc.move_to(next_location, cost)
+        stack << P2State.new(locations, node.open_valves + [next_location], node.total_flow + rates[next_location] * time_remaining)
+      end
+    end
+  end
+
+  puts "found in #{n} iterations: #{best}"
+
+  best&.total_flow
 end
 
 ex1 = <<EX
@@ -126,6 +161,7 @@ try puzzle_input
 part 2
 with :part2
 debug!
-try ex1, 1707
+# try ex1, 1707
+try ex1, 1651
 no_debug!
 try puzzle_input
