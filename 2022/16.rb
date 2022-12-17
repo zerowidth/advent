@@ -93,21 +93,25 @@ def part1(input)
 end
 
 class Search
-  attr_reader :edges, :rates, :distances, :cache
+  attr_reader :edges, :rates, :distances, :cache, :searches, :cache_hits
 
   def initialize(edges, rates, distances)
     @edges = edges
     @rates = rates
     @distances = distances
 
-    @cache = Hash.of { Hash.of_hash } # location => { to_open => { time_remaining => value } }
+    @cache = Hash.of { Hash.of_hash } # from => { to => { time_remaining => value } }
+    @searches = 0
+    @cache_hits = 0
   end
 
   def max_value(from, to_open, time_remaining, depth: 0)
-    # debug " " * depth * 2 + "max_value(#{from}, #{to_open}, #{time_remaining})"
     return 0 if time_remaining < 0
 
+    @searches += 1
+
     if (cached = cache[from][to_open][time_remaining])
+      @cache_hits += 1
       return cached
     end
 
@@ -124,7 +128,18 @@ def part2(input)
   edges, rates, distances, to_open = preprocess(input)
   search = Search.new(edges, rates, distances)
 
-  search.max_value("AA", to_open.to_a, 30)
+  values = []
+  puts "generating combinations"
+  combinations = to_open.to_a.all_combinations.to_a
+  puts "searching #{combinations.length} combinations"
+  combinations.length.times_with_progress do |i|
+    left = Set.new(combinations[i])
+    right = to_open - left
+    values << search.max_value("AA", left, 26) + search.max_value("AA", right, 26)
+  end
+  puts "searches: #{search.searches} cache hits: #{search.cache_hits}"
+
+  values.max
 end
 
 ex1 = <<EX
@@ -150,7 +165,6 @@ try puzzle_input
 part 2
 with :part2
 debug!
-try ex1, 1651
-# try ex1, 1707
+try ex1, 1707
 no_debug!
 try puzzle_input
