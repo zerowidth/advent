@@ -15,7 +15,7 @@ def preprocess(input)
 
   costs = Hash.of_hash
 
-  debug "pregenerating path costs"
+  # debug "pregenerating path distances"
   edges.keys.each do |from|
     (edges.keys - [from]).each do |to|
       # break unless costs[from][to].nil?
@@ -92,81 +92,39 @@ def part1(input)
   best&.total_flow
 end
 
-Location = Struct.new(:position, :time_remaining) do
-  def move_to(new_position, cost)
-    # self.class.new(new_position, time_remaining - cost, path + [new_position])
-    self.class.new(new_position, time_remaining - cost)
+class Search
+  attr_reader :edges, :rates, :distances, :cache
+
+  def initialize(edges, rates, distances)
+    @edges = edges
+    @rates = rates
+    @distances = distances
+
+    @cache = Hash.of { Hash.of_hash } # location => { to_open => { time_remaining => value } }
   end
 
-  def to_s
-    "#{position}:#{time_remaining}"
-  end
-  alias_method :inspect, :to_s
-end
+  def max_value(from, to_open, time_remaining, depth: 0)
+    # debug " " * depth * 2 + "max_value(#{from}, #{to_open}, #{time_remaining})"
+    return 0 if time_remaining < 0
 
-P2State = Struct.new(:locations, :open_valves, :total_flow) do
-  def id
-    "#{locations.map(&:to_s).join(";")};#{open_valves.to_a.sort.join(";")}"
+    if (cached = cache[from][to_open][time_remaining])
+      return cached
+    end
+
+    current = rates[from] * time_remaining
+    values = to_open.map do |to|
+      still_to_open = to_open - [to]
+      max_value(to, still_to_open, time_remaining - distances[from][to] - 1, depth: depth + 1)
+    end
+    cache[from][to_open][time_remaining] = current + (values&.max || 0)
   end
 end
 
 def part2(input)
-  edges, rates, costs, to_open = preprocess(input)
+  edges, rates, distances, to_open = preprocess(input)
+  search = Search.new(edges, rates, distances)
 
-  # some analysis:
-  to_open = to_open.to_a
-  debug "to open: #{to_open}"
-  to_check = 0
-  permutations = {}
-  to_open.all_combinations.each do |combo|
-    to_check += combo.size.factorial
-    to_check += (to_open.length - combo.size).factorial
-  end
-  puts "total number: #{to_check}"
-  return nil
-
-  stack = [P2State.new([Location.new("AA", 26), Location.new("AA", 26)], Set.new, 0)]
-  best = nil
-  n = 0
-
-  while (node = stack.shift)
-    node_id = node.id
-    if seen.include?(node_id)
-      skipped += 1
-      next
-    end
-    seen << node_id
-    n += 1
-    puts "n #{n} stack #{stack.size} skipped #{skipped} current #{node}" if n % 10000 == 0
-    # debug "node: #{node}"
-
-    if to_open.length == node.open_valves.length || node.locations.all? { |loc| loc.time_remaining <= 0 }
-      if node.total_flow > (best&.total_flow || 0)
-        puts "best so far: #{node}"
-        best = node
-      end
-      next
-    end
-
-    still_closed = to_open - node.open_valves
-    locations = node.locations # .sort_by(&:time_remaining).reverse
-    locations.each.with_index do |loc, i|
-      next if loc.time_remaining <= 0
-
-      still_closed.each do |next_location|
-        next if node.locations.any? { |l| l.position == next_location }
-        cost = costs.fetch(loc.position).fetch(next_location) + 1 # move and open
-        time_remaining = loc.time_remaining - cost
-        next_locations = locations.dup
-        next_locations[i] = loc.move_to(next_location, cost)
-        stack << P2State.new(next_locations, node.open_valves + [next_location], node.total_flow + rates[next_location] * time_remaining)
-      end
-    end
-  end
-
-  puts "found in #{n} iterations: #{best}"
-
-  best&.total_flow
+  search.max_value("AA", to_open.to_a, 30)
 end
 
 ex1 = <<EX
@@ -182,16 +140,17 @@ Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II
 EX
 
-# part 1
-# with :part1
-# debug!
-# try ex1, 1651
-# no_debug!
-# try puzzle_input
+part 1
+with :part1
+debug!
+try ex1, 1651
+no_debug!
+try puzzle_input
 
 part 2
 with :part2
 debug!
+try ex1, 1651
 # try ex1, 1707
-# no_debug!
+no_debug!
 try puzzle_input
